@@ -1,0 +1,85 @@
+{% extends "_base_app.html" %}
+{% set active_module = 'debate' %}
+{% block title %}AI Debate Partner — OneHubAI{% endblock %}
+
+{% block content %}
+<div class="d-flex flex-wrap align-items-center justify-content-between mb-4">
+  <div>
+    <h2 class="fw-bold mb-1">AI <span class="gradient-text">Debate Partner</span></h2>
+    <p class="muted mb-0">Voice-led debate. Real-time AI opponent. Professional skill analytics after.</p>
+  </div>
+</div>
+
+<!-- Topic Cards -->
+<div class="glass p-4 mb-4">
+  <h5 class="fw-bold mb-3">🎤 Choose a Debate Topic</h5>
+  <div class="row g-2 mb-3" id="topicCards">
+    {% set preset_topics = [
+      ('AI','Artificial Intelligence','AI will replace all creative jobs'),
+      ('🌍','Climate Change','Economic growth vs environmental protection'),
+      ('📚','Education','Online education vs traditional classroom'),
+      ('💼','Business','Remote work is better than office work'),
+      ('🏛️','Politics','Democracy is the best form of government'),
+      ('💊','Healthcare','Universal healthcare should be mandatory'),
+    ] %}
+    {% for icon, cat, topic in preset_topics %}
+    <div class="col-md-4 col-lg-2">
+      <div class="topic-card feature-card p-3 text-center" onclick="selectTopic(this, '{{ topic }}')">
+        <div style="font-size:1.8rem mb-1">{{ icon }}</div>
+        <div class="fw-semibold small">{{ cat }}</div>
+        <div class="muted" style="font-size:.72rem">{{ topic[:30] }}…</div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+
+  <form method="POST" action="{{ url_for('debate.start') }}">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <input type="hidden" name="topic" id="selectedTopic" value="">
+    <div class="d-flex gap-2 align-items-center mb-3">
+      <input class="form-control" id="customTopic" placeholder="Or type your own debate topic…" oninput="document.getElementById('selectedTopic').value=this.value">
+    </div>
+    <div id="selectedDisplay" class="muted small mb-3">No topic selected yet</div>
+    <button class="btn btn-neon w-100">Start Voice Debate</button>
+  </form>
+</div>
+
+<!-- Past Debates -->
+<div class="glass p-4">
+  <h5 class="fw-bold mb-3">Past Debate Sessions</h5>
+  {% if sessions %}
+    <div class="row g-2">
+    {% for s in sessions %}
+    <div class="col-md-6">
+      <a class="list-row text-decoration-none" href="{{ url_for('debate.session', sid=s.id) }}">
+        <div>
+          <strong class="d-block">{{ s.topic[:55] }}</strong>
+          <span class="muted small">{{ s.created_at.strftime('%b %d, %Y') }}</span>
+        </div>
+        <span class="chip {% if s.scores_json %}neon{% endif %}">{{ 'Scored ✓' if s.scores_json else 'Open' }}</span>
+      </a>
+    </div>
+    {% endfor %}
+    </div>
+  {% else %}
+    <p class="muted small mb-0">Your debate sessions will appear here.</p>
+  {% endif %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function selectTopic(el, topic) {
+  document.querySelectorAll('.topic-card').forEach(c => c.classList.remove('selected-mode'));
+  el.classList.add('selected-mode');
+  document.getElementById('selectedTopic').value = topic;
+  document.getElementById('customTopic').value = '';
+  document.getElementById('selectedDisplay').textContent = '✅ Selected: ' + topic;
+  document.getElementById('selectedDisplay').style.color = 'var(--neon-4)';
+}
+</script>
+<style>
+.topic-card { cursor:pointer; border:2px solid transparent; transition:all .2s; }
+.topic-card.selected-mode { border-color:var(--neon-1); box-shadow:0 0 20px rgba(124,92,255,.3); }
+</style>
+{% endblock %}

@@ -1,0 +1,446 @@
+{% extends "_base_app.html" %}
+{% set active_module = 'interview' %}
+{% block title %}{{ s.role }} — AI Interview{% endblock %}
+
+{% block content %}
+<div class="d-flex flex-wrap align-items-center justify-content-between mb-4">
+  <div>
+    <h2 class="fw-bold mb-1">{{ s.role }}</h2>
+    <p class="muted mb-0">{{ s.interview_type|title }} Interview · {{ s.created_at.strftime('%b %d, %H:%M') }}</p>
+  </div>
+  <div class="d-flex gap-2">
+    <a href="{{ url_for('interview.index') }}" class="btn btn-ghost">← Back</a>
+    <button id="reportBtn" class="btn btn-neon" onclick="generateReport()">Generate Report</button>
+  </div>
+</div>
+
+<!-- Info banner -->
+<div class="alert mb-4" style="border:1px solid rgba(212,175,55,0.4);background:rgba(212,175,55,0.06);">
+  🎤 <strong>Voice-based interview:</strong>Click the mic to record your answer. After each answer, AI will give spoken feedback and ask the next question. 10 questions across 5 topics.
+</div>
+
+<div class="row g-4">
+  <div class="col-lg-8">
+
+    <!-- Question Card -->
+    <div class="glass p-4 mb-3" id="questionCard">
+      <div class="d-flex align-items-start gap-3 mb-4">
+        <div class="q-badge" id="qBadge">1</div>
+        <div class="flex-grow-1">
+          <div class="muted small mb-1" id="topicLabel">Topic 1 of 5</div>
+          <p class="fw-semibold mb-0" id="questionText" style="font-size:1.05rem;line-height:1.7;">
+            {% if questions %}{{ questions[0] }}{% else %}Loading question…{% endif %}
+          </p>
+        </div>
+        <button class="btn btn-ghost btn-sm flex-shrink-0" id="speakQBtn" onclick="speakCurrentQuestion()" title="Hear question">
+          🔊 Listen
+        </button>
+      </div>
+
+      <!-- Mic section -->
+      <div class="d-flex align-items-center gap-4">
+        <button class="main-mic-btn" id="micBtn" onclick="toggleMic()">
+          <span id="micEmoji">🎤</span>
+          <span id="micLabel">Click to Answer</span>
+        </button>
+
+        <div class="flex-grow-1">
+          <div id="liveAnswer" class="answer-display mb-2" style="min-height:60px;">
+            <span class="muted small">Your spoken answer will appear here…</span>
+          </div>
+          <div id="answerStatus" class="muted small"></div>
+        </div>
+      </div>
+
+      <!-- Text input fallback -->
+      <div class="mt-3">
+        <label class="muted small mb-1 d-block">💬 Or type your answer here:</label>
+        <textarea id="textAnswerInput" class="form-control" rows="3" 
+          placeholder="Type your answer here if mic is not working…"
+          oninput="onTextInput(this.value)"
+          style="background:rgba(255,255,255,0.04);border:1px solid var(--border);color:var(--text-0);border-radius:10px;font-size:.9rem;resize:vertical;"></textarea>
+      </div>
+
+      <!-- Submit answer -->
+      <div class="d-flex gap-2 mt-3">
+        <button class="btn btn-neon px-4" id="submitAnswerBtn" onclick="submitAnswer()" style="display:none;">
+          ✅ Submit Answer
+        </button>
+        <button class="btn btn-ghost px-3" id="clearAnswerBtn" onclick="clearAnswer()" style="display:none;">
+          🗑 Clear
+        </button>
+      </div>
+    </div>
+
+    <!-- AI Feedback Card -->
+    <div class="glass p-4 mb-3" id="feedbackCard" style="display:none;">
+      <div class="d-flex align-items-center gap-2 mb-3">
+        <span style="font-size:1.3rem;">🤖</span>
+        <h6 class="fw-bold mb-0">AI Feedback</h6>
+        <span class="chip ms-auto" id="feedbackBadge">Feedback</span>
+      </div>
+      <div id="feedbackText" class="bubble" style="line-height:1.7;"></div>
+      <button class="btn btn-neon mt-3 w-100" id="nextQBtn" onclick="moveToNext()" style="display:none;">
+        ▶ Next Question
+      </button>
+      <button class="btn btn-neon mt-3 w-100" id="finishBtn" onclick="generateReport()" style="display:none;">
+         Generate Final Report
+      </button>
+    </div>
+
+    <!-- Transcript so far -->
+    <div class="glass p-3" id="transcriptSection" style="display:none;">
+      <h6 class="fw-bold mb-3">Interview Transcript</h6>
+      <div id="transcriptList" style="max-height:300px;overflow-y:auto;"></div>
+    </div>
+  </div>
+
+  <!-- Right sidebar -->
+  <div class="col-lg-4">
+    <div class="glass p-4 sticky-top" style="top:80px;">
+      <h6 class="fw-bold mb-3">Progress</h6>
+
+      <!-- Progress bar -->
+      <div class="mb-3">
+        <div class="d-flex justify-content-between muted small mb-1">
+          <span>Questions</span>
+          <span id="progressLabel">0 / {{ questions|length }}</span>
+        </div>
+        <div class="progress-track"><div class="progress-fill" id="progressFill" style="width:0%;"></div></div>
+      </div>
+
+      <!-- Questions overview -->
+      <div id="questionsList" style="max-height:280px;overflow-y:auto;">
+        {% for q in questions %}
+        <div class="d-flex align-items-start gap-2 mb-2 q-overview" id="qov-{{ loop.index0 }}">
+          <span class="q-status-dot" id="qdot-{{ loop.index0 }}">○</span>
+          <span class="muted small" style="font-size:.75rem;line-height:1.4;">{{ q[:55] }}{% if q|length > 55 %}…{% endif %}</span>
+        </div>
+        {% endfor %}
+      </div>
+
+      <div class="divider mt-3"></div>
+      <div class="muted small">
+        <p class="mb-1">Click mic → speak → submit</p>
+        <p class="mb-1">Click listen to hear the question</p>
+        <p class="mb-0">Generate report after all questions</p>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const QUESTIONS = {{ questions | tojson }};
+const SESSION_ID = {{ s.id }};
+let currentQIndex = 0;
+let currentAnswerText = '';
+let isRecording = false;
+let recognition = null;
+let transcript = [];
+
+const Rec = window.SpeechRecognition || window.webkitSpeechRecognition;
+
+// ── Init ──
+document.addEventListener('DOMContentLoaded', async () => {
+  updateProgress();
+  // Play opening audio if available
+  {% if opening_audio %}
+  try {
+    const audio = new Audio('{{ url_for("static", filename="generated/" + opening_audio) if opening_audio else "" }}');
+    audio.play().catch(() => {});
+  } catch(e) {}
+  {% else %}
+  // Fallback: speak first question via browser TTS
+  setTimeout(() => speakCurrentQuestion(), 800);
+  {% endif %}
+});
+
+function updateProgress() {
+  const answered = transcript.filter(t => t.role === 'user').length;
+  const total = QUESTIONS.length;
+  document.getElementById('progressLabel').textContent = `${answered} / ${total}`;
+  document.getElementById('progressFill').style.width = `${(answered/total)*100}%`;
+  // Update question badge
+  document.getElementById('qBadge').textContent = currentQIndex + 1;
+  // Topic label (2 per topic)
+  const topicNum = Math.floor(currentQIndex / 2) + 1;
+  document.getElementById('topicLabel').textContent = `Question ${currentQIndex+1} of ${total} · Topic ${topicNum} of 5`;
+  // Update dots
+  for (let i = 0; i < QUESTIONS.length; i++) {
+    const dot = document.getElementById(`qdot-${i}`);
+    if (!dot) continue;
+    if (i < currentQIndex) dot.textContent = '✅';
+    else if (i === currentQIndex) dot.textContent = '▶';
+    else dot.textContent = '○';
+    dot.style.color = i < currentQIndex ? '#27ae60' : i === currentQIndex ? '#D4AF37' : '';
+  }
+}
+
+function showQuestion(idx) {
+  currentQIndex = idx;
+  currentAnswerText = '';
+  if (idx >= QUESTIONS.length) return;
+  document.getElementById('questionText').textContent = QUESTIONS[idx];
+  document.getElementById('liveAnswer').innerHTML = '<span class="muted small">Your spoken answer will appear here…</span>';
+  document.getElementById('answerStatus').textContent = '';
+  document.getElementById('submitAnswerBtn').style.display = 'none';
+  document.getElementById('clearAnswerBtn').style.display = 'none';
+  document.getElementById('feedbackCard').style.display = 'none';
+  const ta = document.getElementById('textAnswerInput');
+  if (ta) ta.value = '';
+  document.getElementById('nextQBtn').style.display = 'none';
+  document.getElementById('finishBtn').style.display = 'none';
+  updateProgress();
+}
+
+async function speakCurrentQuestion() {
+  const text = QUESTIONS[currentQIndex];
+  const btn = document.getElementById('speakQBtn');
+  btn.innerHTML = '⏳';
+  btn.disabled = true;
+  try {
+    const res = await postJson(`/app/interview/${SESSION_ID}/speak`, { text });
+    if (res.ok && res.url) {
+      const a = new Audio(res.url);
+      a.play();
+    } else {
+      // Browser TTS fallback
+      const utt = new SpeechSynthesisUtterance(text);
+      window.speechSynthesis.speak(utt);
+    }
+  } catch(e) {
+    const utt = new SpeechSynthesisUtterance(text);
+    window.speechSynthesis.speak(utt);
+  }
+  btn.innerHTML = '🔊 Listen';
+  btn.disabled = false;
+}
+
+// ── Microphone ──
+function toggleMic() {
+  if (!Rec) {
+    showToast('Speech recognition requires Chrome or Edge.', 'error');
+    return;
+  }
+  if (isRecording) {
+    recognition.stop();
+    return;
+  }
+  recognition = new Rec();
+  recognition.lang = 'en-US';
+  recognition.interimResults = true;
+  recognition.continuous = true;
+
+  recognition.onstart = () => {
+    isRecording = true;
+    document.getElementById('micBtn').classList.add('recording');
+    document.getElementById('micEmoji').textContent = '🔴';
+    document.getElementById('micLabel').textContent = 'Recording…';
+    document.getElementById('answerStatus').textContent = '🔴 Listening… speak your answer clearly';
+  };
+
+  let finalText = '';
+  recognition.onresult = (e) => {
+    let interim = '';
+    for (let i = e.resultIndex; i < e.results.length; i++) {
+      if (e.results[i].isFinal) finalText += e.results[i][0].transcript + ' ';
+      else interim += e.results[i][0].transcript;
+    }
+    const display = finalText + interim;
+    document.getElementById('liveAnswer').textContent = display.trim() || '…';
+    currentAnswerText = (finalText + interim).trim();
+  };
+
+  recognition.onend = () => {
+    isRecording = false;
+    document.getElementById('micBtn').classList.remove('recording');
+    document.getElementById('micEmoji').textContent = '🎤';
+    document.getElementById('micLabel').textContent = 'Click to Answer';
+    currentAnswerText = finalText.trim();
+    if (currentAnswerText) {
+      document.getElementById('liveAnswer').textContent = currentAnswerText;
+      document.getElementById('answerStatus').textContent = '✅ Answer recorded — click Submit Answer';
+      document.getElementById('submitAnswerBtn').style.display = '';
+      document.getElementById('clearAnswerBtn').style.display = '';
+    } else {
+      document.getElementById('answerStatus').textContent = '⚠️ No speech detected. Try again.';
+    }
+  };
+
+  recognition.onerror = (e) => {
+    isRecording = false;
+    document.getElementById('micBtn').classList.remove('recording');
+    document.getElementById('micEmoji').textContent = '🎤';
+    document.getElementById('micLabel').textContent = 'Click to Answer';
+    const msgs = { 'not-allowed': 'Microphone access denied.', 'no-speech': 'No speech detected. Try again.' };
+    showToast(msgs[e.error] || 'Mic error: ' + e.error, 'error');
+  };
+
+  try { recognition.start(); }
+  catch(e) { showToast('Could not start mic: ' + e.message, 'error'); }
+}
+
+function clearAnswer() {
+  currentAnswerText = '';
+  document.getElementById('liveAnswer').innerHTML = '<span class="muted small">Your spoken answer will appear here…</span>';
+  document.getElementById('answerStatus').textContent = '';
+  document.getElementById('submitAnswerBtn').style.display = 'none';
+  document.getElementById('clearAnswerBtn').style.display = 'none';
+  const ta = document.getElementById('textAnswerInput');
+  if (ta) ta.value = '';
+}
+
+function onTextInput(val) {
+  currentAnswerText = val.trim();
+  if (currentAnswerText) {
+    document.getElementById('liveAnswer').textContent = currentAnswerText;
+    document.getElementById('answerStatus').textContent = '✅ Answer ready — click Submit Answer';
+    document.getElementById('submitAnswerBtn').style.display = '';
+    document.getElementById('clearAnswerBtn').style.display = '';
+  } else {
+    document.getElementById('submitAnswerBtn').style.display = 'none';
+    document.getElementById('clearAnswerBtn').style.display = 'none';
+  }
+}
+
+// ── Submit answer & get AI feedback ──
+async function submitAnswer() {
+  if (!currentAnswerText.trim()) {
+    showToast('Please record your answer first.', 'error');
+    return;
+  }
+
+  document.getElementById('submitAnswerBtn').disabled = true;
+  document.getElementById('answerStatus').textContent = '💾 Saving answer…';
+
+  // Save answer
+  await postJson(`/app/interview/${SESSION_ID}/answer`, {
+    q_index: currentQIndex,
+    text: currentAnswerText,
+  });
+
+  // Add to local transcript
+  transcript.push({ role: 'user', text: currentAnswerText, qi: currentQIndex });
+
+  // Add to visible transcript
+  addToTranscript('Q' + (currentQIndex + 1), QUESTIONS[currentQIndex], currentAnswerText);
+
+  // Get AI feedback
+  document.getElementById('answerStatus').textContent = '🤖 AI is evaluating your answer…';
+  document.getElementById('feedbackCard').style.display = 'block';
+  document.getElementById('feedbackText').innerHTML = '<div class="d-flex gap-2 align-items-center muted"><span class="spinner"></span> Getting feedback…</div>';
+
+  const fbRes = await postJson(`/app/interview/${SESSION_ID}/feedback`, {
+    q_index: currentQIndex,
+    answer: currentAnswerText,
+  });
+
+  if (fbRes.ok) {
+    document.getElementById('feedbackText').textContent = fbRes.feedback_text || '';
+
+    // Play feedback audio
+    if (fbRes.audio_url) {
+      const audio = new Audio(fbRes.audio_url);
+      audio.play().catch(() => {});
+    } else {
+      const utt = new SpeechSynthesisUtterance(fbRes.feedback_text || '');
+      window.speechSynthesis.speak(utt);
+    }
+
+    if (fbRes.has_next) {
+      document.getElementById('feedbackBadge').textContent = `Q${currentQIndex+1} Feedback`;
+      document.getElementById('nextQBtn').style.display = '';
+    } else {
+      document.getElementById('feedbackBadge').textContent = 'Final Feedback';
+      document.getElementById('finishBtn').style.display = '';
+    }
+  } else {
+    document.getElementById('feedbackText').textContent = 'Could not get feedback. Moving on.';
+    if (currentQIndex + 1 < QUESTIONS.length) {
+      document.getElementById('nextQBtn').style.display = '';
+    } else {
+      document.getElementById('finishBtn').style.display = '';
+    }
+  }
+
+  updateProgress();
+  document.getElementById('submitAnswerBtn').disabled = false;
+}
+
+function moveToNext() {
+  const next = currentQIndex + 1;
+  if (next < QUESTIONS.length) {
+    showQuestion(next);
+    // Auto-play next question
+    setTimeout(() => speakCurrentQuestion(), 500);
+    document.getElementById('questionCard').scrollIntoView({ behavior: 'smooth' });
+  }
+}
+
+function addToTranscript(label, question, answer) {
+  const section = document.getElementById('transcriptSection');
+  section.style.display = 'block';
+  const list = document.getElementById('transcriptList');
+  const div = document.createElement('div');
+  div.className = 'mb-3';
+  div.innerHTML = `
+    <div class="muted small fw-bold mb-1">${label}: ${escapeHtml(question)}</div>
+    <div class="bubble" style="font-size:.85rem;">🧑 ${escapeHtml(answer)}</div>
+  `;
+  list.appendChild(div);
+  list.scrollTop = list.scrollHeight;
+}
+
+async function generateReport() {
+  document.getElementById('reportBtn').innerHTML = '<span class="spinner"></span> Scoring…';
+  document.getElementById('reportBtn').disabled = true;
+  const res = await postJson(`/app/interview/${SESSION_ID}/report`, {});
+  if (res.ok && res.redirect) {
+    window.location = res.redirect;
+  } else {
+    showToast('Report generation failed.', 'error');
+    document.getElementById('reportBtn').innerHTML = '📊 Generate Report';
+    document.getElementById('reportBtn').disabled = false;
+  }
+}
+</script>
+
+<style>
+.q-badge {
+  width: 36px; height: 36px; border-radius: 50%;
+  background: linear-gradient(135deg,#D4AF37,#FFD700);
+  color: #050505; font-size:1rem; font-weight:800;
+  display: inline-grid; place-items:center; flex-shrink:0;
+}
+.main-mic-btn {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 6px; width: 100px; height: 100px; border-radius: 50%;
+  background: rgba(212,175,55,0.1);
+  border: 2px solid rgba(212,175,55,0.35);
+  cursor: pointer; transition: all 0.2s; flex-shrink: 0;
+}
+.main-mic-btn:hover { background: rgba(212,175,55,0.2); border-color: #D4AF37; transform: scale(1.05); }
+.main-mic-btn.recording {
+  background: rgba(255,60,60,0.15); border-color: #ff3c3c;
+  animation: pulse-mic 1s ease infinite;
+}
+#micEmoji { font-size: 1.8rem; }
+#micLabel { font-size: 0.62rem; font-weight: 600; color: var(--text-2); text-align:center; }
+.main-mic-btn.recording #micLabel { color: #ff3c3c; }
+@keyframes pulse-mic { 0%,100%{box-shadow:0 0 0 0 rgba(255,60,60,0.4)} 50%{box-shadow:0 0 0 16px rgba(255,60,60,0)} }
+.answer-display {
+  background: rgba(255,255,255,0.03);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 12px 16px;
+  line-height: 1.6;
+  color: var(--text-0);
+  font-size: .88rem;
+}
+.q-status-dot { font-size: .9rem; flex-shrink:0; width:16px; }
+.progress-track { height:4px; border-radius:999px; background:rgba(212,175,55,0.15); overflow:hidden; }
+.progress-fill { height:100%; border-radius:999px; background:linear-gradient(90deg,#D4AF37,#FFD700); transition:width 0.4s ease; }
+</style>
+{% endblock %}

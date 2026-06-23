@@ -1,0 +1,27 @@
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# Flask / DB
+instance/*.db
+*.sqlite
+*.sqlite3
+
+# Generated / uploaded files
+app/static/uploads/*
+app/static/generated/*
+!app/static/uploads/.gitkeep
+!app/static/generated/.gitkeep
+
+# Secrets
+.env
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/

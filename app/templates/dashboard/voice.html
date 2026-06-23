@@ -1,0 +1,423 @@
+{% extends "_base_app.html" %}
+{% set active_module = 'voice' %}
+{% block title %}Voice Studio — OneHubAI{% endblock %}
+
+{% block content %}
+<div class="d-flex flex-wrap align-items-center justify-content-between mb-4">
+  <div>
+    <h2 class="fw-bold mb-1">Voice <span class="gradient-text">Studio</span></h2>
+    <p class="muted mb-0">Free browser transcription &amp; AI-powered text-to-speech — no API key needed.</p>
+  </div>
+</div>
+
+<div class="row g-3">
+  <!-- Speech → Text (browser Web Speech API) -->
+  <div class="col-lg-6">
+    <div class="glass p-4 h-100">
+      <h5 class="fw-bold mb-3">🎙️ Speech → Text</h5>
+      <p class="muted small mb-3">Uses your browser's built-in speech recognition — no upload needed.</p>
+      <button id="sttStartBtn" class="btn btn-neon w-100 mb-2" onclick="startListening()">🎤 Start Recording</button>
+      <button id="sttStopBtn"  class="btn btn-ghost  w-100 mb-3 d-none" onclick="stopListening()">⏹ Stop</button>
+      <div id="sttStatus" class="muted small mb-2"></div>
+      <div id="sttOut" class="mt-2"></div>
+    </div>
+  </div>
+
+  <!-- Text → Speech (browser Web Speech Synthesis) -->
+  <div class="col-lg-6">
+    <div class="glass p-4 h-100">
+      <h5 class="fw-bold mb-3">🔊 Text → Speech</h5>
+      <textarea id="ttsText" rows="4" class="form-control mb-3" placeholder="Type the text you want to convert to speech…"></textarea>
+
+      <!-- Voice style selector -->
+      <div class="mb-3">
+        <label class="form-label fw-semibold small">Choose Voice Style</label>
+        <div id="voiceNotice" class="muted small mb-2" style="display:none">⚠️ Loading voices… if voices don't appear, try clicking Generate first.</div>
+        <div class="voice-style-grid">
+          <div class="voice-btn active" data-v="professional" onclick="selectVoice(this)">
+            <span class="voice-icon">👔</span>
+            <span class="voice-label">Professional</span>
+            <span class="voice-sub">English Male</span>
+          </div>
+          <div class="voice-btn" data-v="female" onclick="selectVoice(this)">
+            <span class="voice-icon">🎤</span>
+            <span class="voice-label">Female</span>
+            <span class="voice-sub">English Female</span>
+          </div>
+          <div class="voice-btn" data-v="british" onclick="selectVoice(this)">
+            <span class="voice-icon">🇬🇧</span>
+            <span class="voice-label">British</span>
+            <span class="voice-sub">UK English</span>
+          </div>
+          <div class="voice-btn" data-v="narrator" onclick="selectVoice(this)">
+            <span class="voice-icon">📖</span>
+            <span class="voice-label">Narrator</span>
+            <span class="voice-sub">Slow &amp; clear</span>
+          </div>
+          <div class="voice-btn" data-v="fast" onclick="selectVoice(this)">
+            <span class="voice-icon">⚡</span>
+            <span class="voice-label">Fast</span>
+            <span class="voice-sub">Quick delivery</span>
+          </div>
+          <div class="voice-btn" data-v="motivational" onclick="selectVoice(this)">
+  <span class="voice-icon">🔥</span>
+  <span class="voice-label">Motivational</span>
+  <span class="voice-sub">Energetic</span>
+</div>
+
+<div class="voice-btn" data-v="male" onclick="selectVoice(this)">
+  <span class="voice-icon">👨</span>
+  <span class="voice-label">Male</span>
+  <span class="voice-sub">Australian</span>
+</div>
+        </div>
+        <div id="voiceNameTag" class="muted small mt-2"></div>
+      </div>
+
+      <!-- Pitch & Rate sliders -->
+      <div class="row g-2 mb-3">
+        <div class="col-6">
+          <label class="form-label small fw-semibold mb-1">Pitch <span id="pitchVal">1.0</span></label>
+          <input type="range" class="form-range" id="pitchSlider" min="0.5" max="2" step="0.1" value="1.0" oninput="document.getElementById('pitchVal').textContent=parseFloat(this.value).toFixed(1)">
+        </div>
+        <div class="col-6">
+          <label class="form-label small fw-semibold mb-1">Speed <span id="rateVal">1.0</span></label>
+          <input type="range" class="form-range" id="rateSlider" min="0.5" max="2" step="0.1" value="1.0" oninput="document.getElementById('rateVal').textContent=parseFloat(this.value).toFixed(1)">
+        </div>
+      </div>
+
+      <button id="ttsBtn" class="btn btn-neon w-100" onclick="generateTTS()">
+        Generate Voice
+      </button>
+      <button id="ttsPauseBtn" class="btn btn-ghost w-100 mt-2 d-none" onclick="pauseResumeTTS()">⏸ Pause</button>
+      <button id="ttsStopBtn" class="btn btn-ghost w-100 mt-2 d-none" onclick="stopTTS()">⏹ Stop</button>
+      <div id="ttsStatus" class="mt-3 text-center muted small"></div>
+      <div id="ttsOut" class="mt-3"></div>
+
+      <!-- Download via server (gTTS) -->
+      <div class="mt-3 border-top pt-3">
+        <p class="muted small mb-2">💾 Want to <strong>download</strong> the audio? Use server-side generation:</p>
+        <button class="btn btn-ghost w-100" onclick="generateServerTTS()">⬇ Generate &amp; Download MP3</button>
+        <div id="serverTtsLoader" class="d-none mt-2 text-center muted small"><span class="spinner"></span> Generating audio…</div>
+        <div id="serverTtsOut" class="mt-2"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Recent voice files -->
+<div class="glass p-4 mt-4">
+  <h5 class="fw-bold mb-3">Recent Voice Files</h5>
+  {% if voices %}
+    {% for v in voices %}
+    <div class="list-row">
+      <div>
+        <span class="chip">{{ v.kind|upper }}</span>
+        <strong class="ms-2">{{ (v.text or '')[:80] }}</strong>
+        <div class="muted small">{{ v.created_at.strftime('%b %d, %H:%M') }}{% if v.voice %} · {{ v.voice }}{% endif %}</div>
+      </div>
+      {% if v.kind == 'tts' %}
+        <audio controls src="{{ url_for('static', filename='generated/' ~ v.file_path) }}"></audio>
+      {% endif %}
+    </div>
+    {% endfor %}
+  {% else %}
+    <p class="muted small mb-0">No voice files yet — generate one above!</p>
+  {% endif %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+/* ── Voice style selection & Web Speech Synthesis ─────── */
+let selectedVoiceKey = 'professional';
+let availableVoices = [];
+let currentUtterance = null;
+let isSpeaking = false;
+
+// Voice preference map: style → filters to pick the right voice
+const VOICE_PREFS = {
+  professional: { lang: 'en-US', gender: 'male',   rate: 1.0,  pitch: 1.0 },
+  female:       { lang: 'en-US', gender: 'female',  rate: 1.0,  pitch: 1.1 },
+  british:      { lang: 'en-GB', gender: 'any',     rate: 0.95, pitch: 1.0 },
+  narrator:     { lang: 'en',    gender: 'any',     rate: 0.75, pitch: 0.9 },
+  fast:         { lang: 'en-US', gender: 'any',     rate: 1.6,  pitch: 1.0 },
+};
+
+function loadVoices() {
+  availableVoices = window.speechSynthesis.getVoices();
+  if (availableVoices.length === 0) {
+    document.getElementById('voiceNotice').style.display = 'block';
+  } else {
+    document.getElementById('voiceNotice').style.display = 'none';
+    updateVoiceTag();
+  }
+}
+
+window.speechSynthesis.onvoiceschanged = loadVoices;
+loadVoices(); // trigger immediately (Chrome fires this sync on first page load)
+
+function pickVoice(key) {
+  const pref = VOICE_PREFS[key] || VOICE_PREFS.professional;
+  const all = availableVoices;
+  if (!all.length) return null;
+
+  // Try to find exact lang + gender match
+  const langMatch = all.filter(v => v.lang.startsWith(pref.lang.split('-')[0]));
+  
+  // Gender heuristics based on voice name keywords
+  const maleKeywords   = ['male', 'man', 'david', 'mark', 'james', 'thomas', 'fred', 'alex', 'daniel', 'george', 'paul', 'rishi', 'reed'];
+  const femaleKeywords = ['female', 'woman', 'samantha', 'victoria', 'karen', 'moira', 'kate', 'susan', 'fiona', 'tessa', 'zira', 'hazel', 'amelie', 'alice'];
+
+  let candidates = langMatch.length ? langMatch : all;
+
+  if (pref.gender === 'male') {
+    const m = candidates.filter(v => maleKeywords.some(k => v.name.toLowerCase().includes(k)));
+    if (m.length) candidates = m;
+  } else if (pref.gender === 'female') {
+    const f = candidates.filter(v => femaleKeywords.some(k => v.name.toLowerCase().includes(k)));
+    if (f.length) candidates = f;
+  }
+
+  // Prefer local/built-in voices (not remote/network)
+  const local = candidates.filter(v => v.localService);
+  return (local.length ? local : candidates)[0] || all[0];
+}
+
+function updateVoiceTag() {
+  const voice = pickVoice(selectedVoiceKey);
+  const tag = document.getElementById('voiceNameTag');
+  if (voice) {
+    tag.textContent = `🎙 Using: ${voice.name} (${voice.lang})`;
+  } else {
+    tag.textContent = availableVoices.length ? `🎙 ${availableVoices.length} voices available` : 'Voices loading…';
+  }
+}
+
+function selectVoice(el) {
+  document.querySelectorAll('.voice-btn').forEach(b => b.classList.remove('active'));
+  el.classList.add('active');
+  selectedVoiceKey = el.dataset.v;
+  // Apply preset pitch/rate from preference
+  const pref = VOICE_PREFS[selectedVoiceKey] || VOICE_PREFS.professional;
+  document.getElementById('pitchSlider').value = pref.pitch;
+  document.getElementById('rateSlider').value = pref.rate;
+  document.getElementById('pitchVal').textContent = pref.pitch.toFixed(1);
+  document.getElementById('rateVal').textContent = pref.rate.toFixed(1);
+  updateVoiceTag();
+}
+
+function generateTTS() {
+  // Reload voices in case they weren't ready
+  if (!availableVoices.length) {
+    availableVoices = window.speechSynthesis.getVoices();
+  }
+
+  const text = document.getElementById('ttsText').value.trim();
+  if (!text) { alert('Please enter some text first.'); return; }
+
+  if (!window.speechSynthesis) {
+    document.getElementById('ttsOut').innerHTML = '<div class="alert alert-warning">⚠️ Your browser does not support speech synthesis. Try Chrome or Edge.</div>';
+    return;
+  }
+
+  // Stop any ongoing speech
+  window.speechSynthesis.cancel();
+
+  const pref   = VOICE_PREFS[selectedVoiceKey] || VOICE_PREFS.professional;
+  const voice  = pickVoice(selectedVoiceKey);
+  const pitch  = parseFloat(document.getElementById('pitchSlider').value);
+  const rate   = parseFloat(document.getElementById('rateSlider').value);
+
+  currentUtterance = new SpeechSynthesisUtterance(text);
+  if (voice) currentUtterance.voice = voice;
+  currentUtterance.pitch = pitch;
+  currentUtterance.rate  = rate;
+  currentUtterance.lang  = voice ? voice.lang : pref.lang;
+
+  currentUtterance.onstart = () => {
+    isSpeaking = true;
+    document.getElementById('ttsStatus').textContent = '🔊 Speaking…';
+    document.getElementById('ttsPauseBtn').classList.remove('d-none');
+    document.getElementById('ttsStopBtn').classList.remove('d-none');
+    document.getElementById('ttsBtn').textContent = '🔊 Speaking…';
+  };
+
+  currentUtterance.onend = () => {
+    isSpeaking = false;
+    document.getElementById('ttsStatus').textContent = '✅ Done!';
+    document.getElementById('ttsPauseBtn').classList.add('d-none');
+    document.getElementById('ttsStopBtn').classList.add('d-none');
+    document.getElementById('ttsBtn').textContent = '🔊 Generate Voice';
+    setTimeout(() => { document.getElementById('ttsStatus').textContent = ''; }, 3000);
+  };
+
+  currentUtterance.onerror = (e) => {
+    isSpeaking = false;
+    document.getElementById('ttsStatus').textContent = '';
+    document.getElementById('ttsPauseBtn').classList.add('d-none');
+    document.getElementById('ttsStopBtn').classList.add('d-none');
+    document.getElementById('ttsBtn').textContent = '🔊 Generate Voice';
+    document.getElementById('ttsOut').innerHTML =
+      `<div class="alert alert-warning">⚠️ Error: ${e.error}. Try a different voice or browser.</div>`;
+  };
+
+  updateVoiceTag();
+  document.getElementById('ttsOut').innerHTML = '';
+  window.speechSynthesis.speak(currentUtterance);
+
+  // Chrome bug: speechSynthesis pauses on long text — keepalive workaround
+  const interval = setInterval(() => {
+    if (!window.speechSynthesis.speaking) { clearInterval(interval); return; }
+    window.speechSynthesis.pause();
+    window.speechSynthesis.resume();
+  }, 10000);
+}
+
+function pauseResumeTTS() {
+  const btn = document.getElementById('ttsPauseBtn');
+  if (window.speechSynthesis.paused) {
+    window.speechSynthesis.resume();
+    btn.textContent = '⏸ Pause';
+    document.getElementById('ttsStatus').textContent = '🔊 Speaking…';
+  } else {
+    window.speechSynthesis.pause();
+    btn.textContent = '▶ Resume';
+    document.getElementById('ttsStatus').textContent = '⏸ Paused';
+  }
+}
+
+function stopTTS() {
+  window.speechSynthesis.cancel();
+  isSpeaking = false;
+  document.getElementById('ttsStatus').textContent = '';
+  document.getElementById('ttsPauseBtn').classList.add('d-none');
+  document.getElementById('ttsStopBtn').classList.add('d-none');
+  document.getElementById('ttsBtn').textContent = '🔊 Generate Voice';
+}
+
+/* ── Server-side TTS (gTTS) for download ──────────────── */
+// Map new voice keys to legacy keys the server understands
+const SERVER_VOICE_MAP = {
+  professional: 'professional',
+  female: 'female',
+  british: 'british',
+  narrator: 'narrator',
+  fast: 'fast',
+};
+
+async function generateServerTTS() {
+  const text = document.getElementById('ttsText').value.trim();
+  if (!text) { alert('Please enter some text first.'); return; }
+
+  const serverVoice = SERVER_VOICE_MAP[selectedVoiceKey] || 'professional';
+  document.getElementById('serverTtsLoader').classList.remove('d-none');
+  document.getElementById('serverTtsOut').innerHTML = '';
+
+  const res = await postJson('{{ url_for("voice.tts") }}', { text, voice: serverVoice });
+  document.getElementById('serverTtsLoader').classList.add('d-none');
+
+  if (res.ok) {
+    document.getElementById('serverTtsOut').innerHTML = `
+      <audio controls src="${res.url}" style="width:100%" class="mb-2"></audio>
+      <a class="btn btn-ghost w-100" download="voice_${selectedVoiceKey}.mp3" href="${res.url}">⬇ Download MP3</a>`;
+  } else {
+    document.getElementById('serverTtsOut').innerHTML =
+      `<div class="alert alert-warning">⚠️ ${res.error || 'Failed to generate audio.'}</div>`;
+  }
+}
+
+/* ── Speech → Text (browser Web Speech API) ───────────── */
+let recognition = null;
+let finalTranscript = '';
+
+function startListening() {
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SpeechRecognition) {
+    document.getElementById('sttStatus').textContent = '⚠️ Your browser does not support speech recognition. Try Chrome or Edge.';
+    return;
+  }
+  recognition = new SpeechRecognition();
+  recognition.continuous = true;
+  recognition.interimResults = true;
+  recognition.lang = 'en-US';
+  finalTranscript = '';
+
+  recognition.onstart = () => {
+    document.getElementById('sttStartBtn').classList.add('d-none');
+    document.getElementById('sttStopBtn').classList.remove('d-none');
+    document.getElementById('sttStatus').innerHTML = '<span style="color:var(--neon-1)">🔴 Recording… speak now</span>';
+    document.getElementById('sttOut').innerHTML = '';
+  };
+
+  recognition.onresult = (event) => {
+    let interim = '';
+    for (let i = event.resultIndex; i < event.results.length; i++) {
+      const t = event.results[i][0].transcript;
+      if (event.results[i].isFinal) finalTranscript += t + ' ';
+      else interim += t;
+    }
+    document.getElementById('sttOut').innerHTML =
+      `<div class="bubble">${escapeHtml(finalTranscript)}<span class="muted">${escapeHtml(interim)}</span></div>`;
+  };
+
+  recognition.onerror = (e) => {
+    document.getElementById('sttStatus').textContent = `⚠️ Error: ${e.error}`;
+    resetSTT();
+  };
+
+  recognition.onend = () => {
+    resetSTT();
+    if (finalTranscript.trim()) {
+      document.getElementById('sttOut').innerHTML =
+        `<div class="muted small mb-2">Transcript</div>
+         <div class="bubble">${escapeHtml(finalTranscript.trim())}</div>
+         <a class="btn btn-ghost mt-2" download="transcript.txt"
+            href="data:text/plain;charset=utf-8,${encodeURIComponent(finalTranscript.trim())}">⬇ Download transcript</a>`;
+    }
+  };
+
+  recognition.start();
+}
+
+function stopListening() {
+  if (recognition) recognition.stop();
+}
+
+function resetSTT() {
+  document.getElementById('sttStartBtn').classList.remove('d-none');
+  document.getElementById('sttStopBtn').classList.add('d-none');
+  document.getElementById('sttStatus').textContent = '';
+}
+
+function escapeHtml(s) {
+  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+</script>
+
+<style>
+.voice-style-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .5rem;
+}
+.voice-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: .6rem .8rem;
+  border: 1.5px solid var(--border);
+  border-radius: 12px;
+  cursor: pointer;
+  min-width: 90px;
+  transition: all .18s;
+  text-align: center;
+}
+.voice-btn:hover  { border-color: var(--neon-1); background: rgba(124,92,255,.08); }
+.voice-btn.active { border-color: var(--neon-1); background: rgba(124,92,255,.2); box-shadow: 0 0 14px rgba(124,92,255,.3); }
+.voice-icon  { font-size: 1.4rem; }
+.voice-label { font-weight: 700; font-size: .82rem; margin-top: .2rem; }
+.voice-sub   { font-size: .72rem; color: var(--text-2); }
+</style>
+{% endblock %}

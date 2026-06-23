@@ -1,0 +1,77 @@
+{% extends "_base_app.html" %}
+{% set active_module = 'image' %}
+{% block title %}Image Generator — OneHubAI{% endblock %}
+
+{% block content %}
+<div class="d-flex flex-wrap align-items-center justify-content-between mb-4">
+  <div>
+    <h2 class="fw-bold mb-1">Image <span class="gradient-text">Generator</span></h2>
+    <p class="muted mb-0">Same prompt, three engines — pick your favorite.</p>
+  </div>
+</div>
+
+<div class="glass p-4 mb-4">
+  <label class="form-label">Describe what you want to see</label>
+  <textarea id="prompt" class="form-control" rows="3" placeholder="e.g. cyberpunk fox in a neon-lit Tokyo alley, cinematic lighting"></textarea>
+  <div class="d-flex flex-wrap gap-2 mt-3 align-items-center">
+    <div class="form-check ms-2">
+      <input class="form-check-input" type="checkbox" id="enh" checked>
+      <label class="form-check-label muted" for="enh">Auto-enhance prompt</label>
+    </div>
+    <button id="genBtn" class="btn btn-neon ms-auto">Generate</button>
+  </div>
+  <div id="result" class="mt-4"></div>
+</div>
+
+<h5 class="fw-bold mb-3">Your gallery</h5>
+{% if images %}
+<div class="img-grid">
+  {% for img in images %}
+  <figure>
+    <img loading="lazy" src="{{ url_for('static', filename='generated/' ~ img.file_path) }}" alt="{{ img.prompt[:60] }}">
+    <figcaption>
+      <div class="text-truncate"><strong>{{ img.prompt[:60] }}</strong></div>
+      <div class="d-flex justify-content-between align-items-center mt-1">
+        <span class="chip">{{ img.provider }}</span>
+        <a class="muted small text-decoration-none" download href="{{ url_for('static', filename='generated/' ~ img.file_path) }}">⬇ PNG</a>
+      </div>
+    </figcaption>
+  </figure>
+  {% endfor %}
+</div>
+{% else %}
+<div class="glass p-5 text-center muted"><div style="font-size:3rem">🖼️</div><p class="mb-0">Your generated images will appear here.</p></div>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.getElementById('genBtn').addEventListener('click', async () => {
+  const prompt = document.getElementById('prompt').value.trim();
+  if (!prompt) return;
+  const provider = document.getElementById('provider').value;
+  const use_enhanced = document.getElementById('enh').checked;
+  const out = document.getElementById('result');
+  out.innerHTML = '<div class="bubble"><span class="spinner"></span> Generating with ' + provider + '…</div>';
+  const res = await postJson('{{ url_for("image.generate") }}', { prompt, provider, use_enhanced });
+  if (res.ok) {
+    out.innerHTML = `
+      <div class="row g-3 align-items-start">
+        <div class="col-md-6"><img src="${res.url}" class="img-fluid rounded-3" alt=""></div>
+        <div class="col-md-6">
+          <div class="mb-2"><span class="chip neon">${provider}</span></div>
+          <p class="muted small mb-2">Enhanced prompt used:</p>
+          <div class="bubble">${escapeHtml(res.enhanced_prompt || prompt)}</div>
+          <div class="mt-3 d-flex gap-2">
+            <a class="btn btn-ghost" download href="${res.url}">⬇ Download PNG</a>
+            <button class="btn btn-neon" onclick="document.getElementById('genBtn').click()">Regenerate</button>
+          </div>
+        </div>
+      </div>`;
+    setTimeout(() => location.reload(), 1500);
+  } else {
+    out.innerHTML = `<div class="alert alert-warning">${res.error}</div>`;
+  }
+});
+</script>
+{% endblock %}

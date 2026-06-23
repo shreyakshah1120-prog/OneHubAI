@@ -1,0 +1,90 @@
+{% extends "_base_app.html" %}
+{% set active_module = 'history' %}
+{% block title %}History — OneHubAI{% endblock %}
+
+{% block content %}
+<div class="d-flex flex-wrap align-items-center justify-content-between mb-4">
+  <div>
+    <h2 class="fw-bold mb-1">📜 <span class="gradient-text">Activity History</span></h2>
+    <p class="muted mb-0">All your AI sessions, generations, and reports in one timeline.</p>
+  </div>
+  <form method="POST" action="{{ url_for('history.clear') }}" onsubmit="return confirm('Clear all history? This cannot be undone.')">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <button class="btn btn-ghost">🗑 Clear All</button>
+  </form>
+</div>
+
+<!-- Search -->
+<div class="glass p-3 mb-4">
+  <div class="d-flex gap-3 flex-wrap align-items-center">
+    <input id="searchInput" class="form-control" placeholder="🔍 Search history…" style="max-width:320px" oninput="filterHistory()">
+    <div class="d-flex gap-2 flex-wrap">
+      {% for mod in ['all','chat','image','study','interview','debate','health','voice'] %}
+      <button class="chip filter-chip {% if mod=='all' %}neon{% endif %}" data-filter="{{ mod }}" onclick="setFilter(this, '{{ mod }}')">
+        {{ mod|capitalize }}
+      </button>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+
+<!-- History List -->
+<div class="glass p-3" id="historyList">
+  {% if events %}
+    {% for ev in events %}
+    <div class="list-row history-item text-decoration-none" data-module="{{ ev.module }}" data-title="{{ ev.title|lower }}">
+      <a href="{{ url_for('history.open_event', eid=ev.id) }}" class="d-flex align-items-center gap-3 text-decoration-none flex-grow-1">
+        <span style="font-size:1.4rem">
+          {% if ev.module=='chat' %}🎯
+          {% elif ev.module=='image' %}🖼️
+          {% elif ev.module=='study' %}📚
+          {% elif ev.module=='interview' %}🎤
+          {% elif ev.module=='debate' %}🧠
+          {% elif ev.module=='health' %}🏥
+          {% elif ev.module=='voice' %}🎙️
+          {% else %}✨{% endif %}
+        </span>
+        <div>
+          <strong>{{ ev.title }}</strong>
+          <div class="muted small">{{ ev.module|capitalize }} · {{ ev.created_at.strftime('%b %d, %Y at %H:%M') }}</div>
+        </div>
+      </a>
+      <div class="d-flex align-items-center gap-2">
+        <span class="chip">{{ ev.module }}</span>
+        <form method="POST" action="{{ url_for('history.delete_event', eid=ev.id) }}" onsubmit="return confirm('Delete this item?')">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <button class="btn btn-ghost btn-sm py-1 px-2 text-danger">✕</button>
+        </form>
+      </div>
+    </div>
+    {% endfor %}
+  {% else %}
+    <div class="text-center muted py-5">
+      <div style="font-size:3rem">📭</div>
+      <p class="mb-0">No history yet. Start using OneHubAI tools!</p>
+    </div>
+  {% endif %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let activeFilter = 'all';
+
+function setFilter(el, mod) {
+  activeFilter = mod;
+  document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('neon'));
+  el.classList.add('neon');
+  filterHistory();
+}
+
+function filterHistory() {
+  const q = document.getElementById('searchInput').value.toLowerCase();
+  document.querySelectorAll('.history-item').forEach(item => {
+    const matchMod = activeFilter === 'all' || item.dataset.module === activeFilter;
+    const matchQ = !q || item.dataset.title.includes(q);
+    item.style.display = matchMod && matchQ ? '' : 'none';
+  });
+}
+</script>
+{% endblock %}

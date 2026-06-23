@@ -1,0 +1,527 @@
+{% extends "_base_app.html" %}
+{% set active_module = 'home' %}
+{% block title %}Dashboard — OneHubAI{% endblock %}
+
+{% block content %}
+
+<!-- Advanced Dashboard Styles -->
+<style>
+/* ── Dust-Black Dashboard Theme ── */
+.dash-page {
+  --dust: #0a0a0b;
+  --dust-1: #111113;
+  --dust-2: #181819;
+  --dust-3: #222224;
+  --dust-border: rgba(255,255,255,0.06);
+  --dust-border-glow: rgba(221, 180, 47, 0.2);
+  --gold: #12368cb5;
+  --gold-2: #124cd3;
+  --gold-dim: rgba(212,175,55,0.08);
+  --gold-glow: 0 0 32px rgba(69, 68, 67, 0.18);
+}
+
+/* Greeting Section */
+.dash-greeting {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 1.5rem 1.75rem;
+  background: linear-gradient(135deg, rgba(212,175,55,0.06) 0%, rgba(255,215,0,0.03) 100%);
+  border: 1px solid rgba(212,175,55,0.12);
+  border-radius: 20px;
+  margin-bottom: 1.5rem;
+  position: relative;
+  overflow: hidden;
+}
+.dash-greeting::before {
+  content: '';
+  position: absolute; top: 0; left: 0; right: 0; height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(3, 26, 97, 0.505), transparent);
+}
+.dash-greeting-text h2 { font-size: 1.6rem; }
+.dash-greeting .btn-neon {
+  background: linear-gradient(135deg, #717170, #6a6a6a);
+  color: #050505;
+  font-weight: 700;
+  border: none;
+  box-shadow: 0 4px 20px rgba(212,175,55,0.35);
+  white-space: nowrap;
+}
+
+/* ── Stat Cards ── */
+.stat-card {
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: 18px;
+  padding: 1.25rem;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+  cursor: pointer;
+  text-decoration: none !important;
+  display: block;
+}
+.stat-card::after {
+  content: '';
+  position: absolute; bottom: 0; left: 0; right: 0; height: 2px;
+  background: linear-gradient(90deg, transparent, var(--stat-color, #D4AF37), transparent);
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+.stat-card:hover {
+  background: rgba(212,175,55,0.06);
+  border-color: rgba(212,175,55,0.2);
+  transform: translateY(-4px);
+  box-shadow: 0 12px 40px rgba(0,0,0,0.4), 0 0 20px rgba(212,175,55,0.08);
+}
+.stat-card:hover::after { opacity: 1; }
+.stat-card .ic {
+  width: 40px; height: 40px;
+  background: rgba(212,175,55,0.08);
+  border: 1px solid rgba(212,175,55,0.15);
+  border-radius: 12px;
+  display: grid; place-items: center;
+  font-size: 1.1rem;
+  margin-bottom: 0.75rem;
+}
+.stat-card h6 {
+  font-size: 0.72rem; font-weight: 600;
+  text-transform: uppercase; letter-spacing: 0.06em;
+  color: var(--text-2); margin-bottom: 0.25rem;
+}
+.stat-card .num {
+  font-size: 1.8rem; font-weight: 800;
+  color: var(--text-0); line-height: 1;
+  margin-bottom: 0.5rem;
+}
+.stat-bar-mini {
+  height: 3px;
+  background: rgba(255,255,255,0.06);
+  border-radius: 2px;
+  overflow: hidden;
+}
+.stat-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #656564, #777776);
+  border-radius: 2px;
+  transition: width 1s ease;
+}
+.stat-trend {
+  font-size: 0.7rem; font-weight: 700;
+  color: #22c55e;
+  background: rgba(34,197,94,0.12);
+  border-radius: 4px;
+  padding: 1px 5px;
+}
+
+/* ── Sections ── */
+.dash-section {
+  background: rgba(255,255,255,0.02);
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: 20px;
+  padding: 1.5rem;
+  position: relative;
+  overflow: hidden;
+}
+.dash-section-title {
+  font-size: 0.85rem; font-weight: 700;
+  text-transform: uppercase; letter-spacing: 0.08em;
+  color: var(--text-2);
+  margin-bottom: 1rem;
+  display: flex; align-items: center; gap: 0.5rem;
+}
+.dash-section-title::after {
+  content: ''; flex: 1;
+  height: 1px;
+  background: linear-gradient(90deg, rgba(255,255,255,0.06), transparent);
+}
+
+/* ── Chart card ── */
+.chart-card {
+  background: rgba(255,255,255,0.02);
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: 20px;
+  padding: 1.5rem;
+}
+.chart-meta {
+  display: flex; justify-content: space-between; align-items: center;
+  margin-bottom: 1.25rem;
+}
+.chart-meta h5 { font-size: 0.95rem; font-weight: 700; margin: 0; }
+.chart-legend {
+  display: flex; flex-wrap: wrap; gap: 0.75rem;
+  margin-top: 1rem;
+}
+.legend-dot {
+  display: flex; align-items: center; gap: 0.4rem;
+  font-size: 0.75rem; color: var(--text-2);
+}
+.legend-dot::before {
+  content: ''; width: 8px; height: 8px; border-radius: 50%;
+  background: var(--dot-color);
+}
+
+/* ── Quick Launch ── */
+.ql-card {
+  background: rgba(255,255,255,0.02);
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: 20px;
+  padding: 1.5rem;
+  height: 100%;
+}
+.ql-btn {
+  display: flex; align-items: center; gap: 0.75rem;
+  padding: 0.7rem 0.9rem;
+  border-radius: 12px;
+  border: 1px solid rgba(255,255,255,0.05);
+  background: transparent;
+  color: var(--text-1);
+  text-decoration: none;
+  font-size: 0.88rem;
+  font-weight: 600;
+  transition: all 0.2s;
+  position: relative;
+  overflow: hidden;
+}
+.ql-btn::before {
+  content: '';
+  position: absolute; inset: 0;
+  background: linear-gradient(135deg, rgba(212,175,55,0.06), transparent);
+  opacity: 0; transition: opacity 0.2s;
+}
+.ql-btn:hover {
+  border-color: rgba(212,175,55,0.25);
+  color: var(--text-0);
+  transform: translateX(3px);
+}
+.ql-btn:hover::before { opacity: 1; }
+.ql-btn .ql-icon {
+  width: 32px; height: 32px;
+  background: rgba(212,175,55,0.08);
+  border-radius: 8px;
+  display: grid; place-items: center;
+  font-size: 0.95rem; flex-shrink: 0;
+}
+.ql-arrow {
+  margin-left: auto;
+  color: var(--text-2);
+  font-size: 0.8rem;
+  transition: transform 0.2s;
+}
+.ql-btn:hover .ql-arrow { transform: translateX(3px); color: #D4AF37; }
+
+/* ── Activity cards ── */
+.activity-card-item {
+  padding: 0.75rem 1rem;
+  border-radius: 14px;
+  border: 1px solid rgba(255,255,255,0.04);
+  background: rgba(255,255,255,0.02);
+  color: var(--text-0);
+  transition: all 0.2s;
+}
+.activity-card-item:hover {
+  background: rgba(212,175,55,0.05);
+  border-color: rgba(212,175,55,0.15);
+  color: var(--text-0);
+}
+.activity-icon {
+  width: 36px; height: 36px;
+  background: rgba(212,175,55,0.08);
+  border: 1px solid rgba(212,175,55,0.12);
+  border-radius: 10px;
+  display: grid; place-items: center;
+  font-size: 0.95rem; flex-shrink: 0;
+}
+
+/* ── Status bar (top strip) ── */
+.dash-status-bar {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0.5rem 1rem;
+  background: rgba(212,175,55,0.04);
+  border: 1px solid rgba(212,175,55,0.1);
+  border-radius: 10px;
+  margin-bottom: 1.25rem;
+  font-size: 0.78rem;
+  color: var(--text-2);
+}
+.status-dot {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: #22c55e;
+  box-shadow: 0 0 6px #22c55e;
+  animation: pulse-dot 2s ease infinite;
+}
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+.chip {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-size: 0.72rem; font-weight: 600;
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.08);
+  color: var(--text-2);
+}
+
+/* ── Zero state ── */
+.zero-state {
+  text-align: center; padding: 3rem 1rem;
+  border: 1px dashed rgba(255,255,255,0.08);
+  border-radius: 16px;
+}
+.zero-icon { font-size: 2.5rem; margin-bottom: 0.75rem; }
+</style>
+
+<div class="dash-page">
+
+<!-- Status Bar -->
+<div class="dash-status-bar">
+  <div class="d-flex align-items-center gap-2">
+    <div class="status-dot"></div>
+   
+  </div>
+  <div class="d-flex align-items-center gap-3">
+    <span>OneHubAI Platform</span>
+    <span class="chip">A+</span>
+  </div>
+</div>
+
+<!-- Greeting -->
+<div class="dash-greeting mb-4">
+  <div class="dash-greeting-text">
+    <h2 class="fw-bold mb-1">
+      Welcome, <span class="gradient-text">{{ current_user.name.split()[0] }}</span> 👋
+    </h2>
+    <p class="muted mb-0" style="font-size:0.9rem;">
+      {% if stats.this_week == 0 %}
+        Welcome to OneHubAI. 
+      {% else %}
+        You've created <strong style="color:#1137c3;">{{ stats.this_week }}</strong> session{{ 's' if stats.this_week != 1 }} this week. Keep it up.
+      {% endif %}
+    </p>
+  </div>
+ 
+</div>
+
+<!-- Stats Grid -->
+<div class="row g-3 mb-4">
+  {% set tiles = [
+    ('🎯', 'AI Chats',     stats.chats,      'ai_studio.index', '#D4AF37'),
+    ('🖼️', 'Images',       stats.images,     'image.index',     '#FFD700'),
+    ('📚', 'Study Files',  stats.studies,    'study.index',     '#D4AF37'),
+    ('🎤', 'Interviews',   stats.interviews, 'interview.index', '#FFD700'),
+    ('🧠', 'Debates',      stats.debates,    'debate.index',    '#D4AF37'),
+    ('🏥', 'Health Scans', stats.healths,    'health.index',    '#FFD700'),
+  ] %}
+  {% for icon, label, value, route, color in tiles %}
+  <div class="col-6 col-md-4 col-lg-2">
+    <a href="{{ url_for(route) }}" class="stat-card" style="--stat-color:{{ color }}">
+      <div class="ic">{{ icon }}</div>
+      <h6>{{ label }}</h6>
+      <div class="num">{{ value }}</div>
+      <div class="stat-bar-mini">
+        <div class="stat-bar-fill" style="width:{{ [value * 10, 100]|min }}%"></div>
+      </div>
+      {% if value > 0 %}<span class="stat-trend" style="position:absolute;top:.85rem;right:.85rem;">↑</span>{% endif %}
+    </a>
+  </div>
+  {% endfor %}
+</div>
+
+<!-- Chart + Quick Launch -->
+<div class="row g-3 mb-4">
+  <div class="col-lg-8">
+    <div class="chart-card">
+      <div class="chart-meta">
+        <div>
+          <h5>Activity Overview</h5>
+          <p class="muted small mb-0" style="font-size:0.78rem;">Sessions per day — last 7 days</p>
+        </div>
+        <span class="chip">Last 7 days</span>
+      </div>
+
+      {% set total_activity = chart.chats|sum + chart.images|sum + chart.studies|sum %}
+      {% if total_activity == 0 %}
+        <div class="zero-state">
+          <div class="zero-icon">📊</div>
+          <p class="muted mb-0" style="font-size:0.85rem;">Your activity chart will appear here as you use the platform.</p>
+        </div>
+      {% else %}
+        <canvas id="activityChart" height="90" style="width:100%;display:block;"></canvas>
+      {% endif %}
+
+      <div class="chart-legend mt-3">
+        <span class="legend-dot" style="--dot-color:#D4AF37">AI Chats: {{ stats.chats }}</span>
+        <span class="legend-dot" style="--dot-color:#FFD700">Images: {{ stats.images }}</span>
+        <span class="legend-dot" style="--dot-color:rgba(212,175,55,0.5)">Study: {{ stats.studies }}</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-4">
+    <div class="ql-card">
+      <div class="dash-section-title">Quick Launch</div>
+      <div class="d-grid gap-2">
+        <a class="ql-btn" href="{{ url_for('ai_studio.index') }}">
+          <span class="ql-icon">🎯</span>
+          <span>AI Studio</span>
+          <span class="ql-arrow">›</span>
+        </a>
+        <a class="ql-btn" href="{{ url_for('image.index') }}">
+          <span class="ql-icon">🖼️</span>
+          <span>Image Generator</span>
+          <span class="ql-arrow">›</span>
+        </a>
+        <a class="ql-btn" href="{{ url_for('interview.index') }}">
+          <span class="ql-icon">🎤</span>
+          <span>AI Interview</span>
+          <span class="ql-arrow">›</span>
+        </a>
+        <a class="ql-btn" href="{{ url_for('study.index') }}">
+          <span class="ql-icon">📚</span>
+          <span>Study Assistant</span>
+          <span class="ql-arrow">›</span>
+        </a>
+        <a class="ql-btn" href="{{ url_for('debate.index') }}">
+          <span class="ql-icon">🧠</span>
+          <span>AI Debate</span>
+          <span class="ql-arrow">›</span>
+        </a>
+        <a class="ql-btn" href="{{ url_for('health.index') }}">
+          <span class="ql-icon">🏥</span>
+          <span>Health Assistant</span>
+          <span class="ql-arrow">›</span>
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Recent Activity -->
+<div class="dash-section">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <div class="dash-section-title mb-0">Recent Activity</div>
+    <a href="{{ url_for('history.index') }}" class="muted small text-decoration-none" style="font-size:0.8rem;">View all →</a>
+  </div>
+
+  {% if recent %}
+    <div class="row g-2">
+      {% for ev in recent %}
+      <div class="col-md-6">
+        <a href="{{ url_for('history.open_event', eid=ev.id) }}"
+           class="activity-card-item text-decoration-none d-flex align-items-center gap-3">
+          <span class="activity-icon">
+            {% if ev.module == 'chat' %}🎯
+            {% elif ev.module == 'image' %}🖼️
+            {% elif ev.module == 'study' %}📚
+            {% elif ev.module == 'interview' %}🎤
+            {% elif ev.module == 'debate' %}🧠
+            {% elif ev.module == 'health' %}🏥
+            {% elif ev.module == 'voice' %}🎙️
+            {% else %}{% endif %}
+          </span>
+          <div class="flex-grow-1" style="min-width:0;">
+            <strong class="d-block text-truncate" style="font-size:.85rem;">{{ ev.title[:55] }}</strong>
+            <div class="muted" style="font-size:.72rem;">{{ ev.created_at.strftime('%b %d, %H:%M') }}</div>
+          </div>
+          <span class="chip flex-shrink-0">{{ ev.module|capitalize }}</span>
+        </a>
+      </div>
+      {% endfor %}
+    </div>
+  {% else %}
+    <div class="zero-state">
+      <div class="zero-icon">✨</div>
+      <p class="muted mb-3" style="font-size:0.88rem;">No activity yet. Every session you complete will appear here.</p>
+      <a href="{{ url_for('ai_studio.index') }}" class="btn btn-neon btn-sm">Try AI Studio →</a>
+    </div>
+  {% endif %}
+</div>
+
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+const chartLabels = {{ chart.labels | tojson }};
+const chatData    = {{ chart.chats  | tojson }};
+const imageData   = {{ chart.images | tojson }};
+const studyData   = {{ chart.studies| tojson }};
+
+const ctx = document.getElementById('activityChart');
+if (ctx) {
+  const textCol = 'rgba(255,255,255,0.3)';
+  const gridCol = 'rgba(255,255,255,0.04)';
+
+  new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: chartLabels,
+      datasets: [
+        {
+          label: 'AI Chats',
+          data: chatData,
+          borderColor: '#D4AF37',
+          backgroundColor: 'rgba(212,175,55,0.08)',
+          tension: 0.45, fill: true, pointRadius: 3,
+          pointBackgroundColor: '#D4AF37',
+          borderWidth: 2,
+        },
+        {
+          label: 'Images',
+          data: imageData,
+          borderColor: '#FFD700',
+          backgroundColor: 'rgba(255,215,0,0.05)',
+          tension: 0.45, fill: true, pointRadius: 3,
+          pointBackgroundColor: '#FFD700',
+          borderWidth: 2,
+        },
+        {
+          label: 'Study',
+          data: studyData,
+          borderColor: 'rgba(212,175,55,0.5)',
+          backgroundColor: 'rgba(212,175,55,0.04)',
+          tension: 0.45, fill: true, pointRadius: 3,
+          pointBackgroundColor: 'rgba(212,175,55,0.5)',
+          borderWidth: 1.5,
+        },
+      ]
+    },
+    options: {
+      responsive: true,
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: 'rgba(10,10,11,0.95)',
+          borderColor: 'rgba(212,175,55,0.2)',
+          borderWidth: 1,
+          titleColor: '#F5F5F5',
+          bodyColor: 'rgba(255,255,255,0.5)',
+          padding: 12,
+          cornerRadius: 10,
+        }
+      },
+      scales: {
+        x: {
+          ticks: { color: textCol, font: { size: 11 } },
+          grid: { color: gridCol },
+          border: { color: 'transparent' }
+        },
+        y: {
+          beginAtZero: true,
+          ticks: {
+            color: textCol, font: { size: 11 },
+            callback: v => Number.isInteger(v) ? v : null,
+            stepSize: 1,
+          },
+          grid: { color: gridCol },
+          border: { color: 'transparent' }
+        }
+      }
+    }
+  });
+}
+</script>
+{% endblock %}
