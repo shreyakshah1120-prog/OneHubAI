@@ -1,6 +1,15 @@
 <!doctype html>
 <html lang="en" data-theme="{% if current_user and current_user.is_authenticated %}{{ current_user.theme or 'dark' }}{% else %}dark{% endif %}">
 <head>
+   <!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-N61NNQ51XN"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-N61NNQ51XN');
+</script>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="csrf-token" content="{{ csrf_token() }}">
