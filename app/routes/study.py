@@ -22,7 +22,9 @@ from ..services.files import extract_text
 bp = Blueprint("study", __name__)
 
 ALLOWED_DOCS = {".pdf", ".docx", ".pptx", ".ppt", ".txt", ".md"}
-
+MAX_FILE_BYTES = 5 * 1024 * 1024  # 5 MB per file
+MAX_COMBINED_CHARS = 8000
+MAX_SOURCE_CHARS   = 6000
 
 # ─── AI helpers ───────────────────────────────────────────────────────────────
 
@@ -169,10 +171,25 @@ def upload():
         ext = Path(file.filename).suffix.lower()
         if ext not in ALLOWED_DOCS:
             continue
+        # Reject files over 5MB before saving
+        file.seek(0, 2)
+        file_size = file.tell()
+        file.seek(0)
+        if file_size > MAX_FILE_BYTES:
+            return jsonify({"ok": False, "error": f"File '{file.filename}' is too large. Max 5MB."}), 400
+
         safe = secure_filename(file.filename)
         p = Path(current_app.config["UPLOAD_FOLDER"]) / f"study_{current_user.id}_{safe}"
         file.save(p)
-        text = extract_text(str(p))
+        try:
+            text = extract_text(str(p))
+        except Exception:
+            text = ""
+        finally:
+            try:
+                p.unlink(missing_ok=True)  # delete file after reading
+            except Exception:
+                pass
         combined_text += f"\n\n--- File: {safe} ---\n{text}"
         filenames.append(safe)
 
@@ -188,7 +205,7 @@ def upload():
     else:
         return jsonify({"ok": False, "error": "Please enter a topic or upload at least one file."}), 400
 
-    combined_text = combined_text[:18000]
+    combined_text = combined_text[:MAX_COMBINED_CHARS]
 
     system_prompt = "You are an expert academic tutor and study guide creator. Return ONLY valid JSON — no markdown fences, no extra text. For all content fields, use rich HTML formatting: use <table> for comparisons, <h4> for section headers, <ul><li> for bullet lists, <strong> for key terms, <em> for definitions, <div class='example-box'> for examples, <span class='formula'> for formulas. Make content visually rich and student-friendly."
     prompt = f"""Analyze the study content below and create a comprehensive, professional, visually rich study guide using HTML formatting.
@@ -226,6 +243,7 @@ STUDY CONTENT:
 """
 
     res = ask_ai_json(prompt, system_prompt)
+    del combined_text, prompt  # free RAM before DB write
     payload = res.get("data") or {}
     if isinstance(payload, list):
         payload = {}
@@ -276,7 +294,7 @@ def generate_questions(mid: int):
     m = StudyMaterial.query.filter_by(id=mid, user_id=current_user.id).first_or_404()
     data = request.get_json(silent=True) or {}
     q_type = data.get("type", "mcq")
-    n = max(1, min(100, int(data.get("count", 10))))
+    n = max(1, min(50, int(data.get("count", 10))))
 
     extra = {}
     try:
@@ -289,7 +307,7 @@ def generate_questions(mid: int):
     for v in extra.values():
         if isinstance(v, str):
             source_parts.append(v)
-    source = " ".join(filter(None, source_parts))[:12000]
+    source = " ".join(filter(None, source_parts))[:MAX_SOURCE_CHARS]
 
     if not source.strip():
         return jsonify({"ok": False, "error": "No study content available."}), 400

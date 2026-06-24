@@ -48,12 +48,12 @@
   <div class="container">
     <div class="text-center mb-5">
       <h2 class="fw-bold">Simple, <span class="gradient-text">honest pricing</span></h2>
-      <p class="muted">Bring your own keys — pay providers directly. OneHubAI is the workspace.</p>
+      <p class="muted">No API keys needed. No setup. Just sign up and start using all AI tools instantly.</p>
     </div>
     <div class="row g-4 justify-content-center">
       {% set tiers = [
-        {'name':'Starter','price':'$0','unit':'Forever free','rows':['Bring your own API keys','All 8 modules unlocked','Unlimited prompts (BYOK)']},
-        {'name':'Pro','price':'$19','unit':'/mo','rows':['Team workspace','Shared prompt library','Priority models routing']},
+        {'name':'Starter','price':'₹0','unit':'Forever free','rows':['No API keys needed','All 8 AI modules unlocked','Study uploads & test generation','AI Interview & Debate access']},
+        {'name':'Pro','price':'₹249','unit':'/mo','rows':['Unlimited study uploads','Unlimited interviews & debates','Unlimited image generation','Priority AI responses','Advanced performance reports']},
         {'name':'Enterprise','price':'Custom','unit':'','rows':['SSO + audit logs','SOC2-ready logging','Dedicated success engineer']}
       ] %}
       {% for t in tiers %}
@@ -82,9 +82,9 @@
     </div>
     <div class="row g-4">
       {% set quotes = [
-        ('Replaced four browser tabs with one.','Aanya M.','Product Designer'),
-        ('The interview coach actually helped me land an offer.','Rahul P.','Senior Engineer'),
-        ('I generate research notes from PDFs in seconds.','Dr. Elena K.','PhD Researcher'),
+        ('I uploaded my entire semester notes and got a full summary with exam tips in under a minute. This is exactly what students need.','Priya S.','B.Tech CSE Student'),
+        ('The AI mock interview gave me honest feedback on my answers. I felt much more confident in my actual interview after practising here.','Arjun M.','Software Engineer'),
+        ('The debate feature is genuinely impressive. It argued back intelligently and pushed me to think deeper. Great for competitive exam prep.','Neha R.','UPSC Aspirant'),
       ] %}
       {% for q, who, role in quotes %}
       <div class="col-md-4">
@@ -109,7 +109,6 @@
         ('What is OneHubAI?', 'OneHubAI is an all-in-one AI-powered platform that helps students and professionals study smarter, prepare for interviews, practice debates, generate images, and get health guidance — all in one place without switching between multiple tools.'),
         ('Is OneHubAI free to use?', 'Yes, OneHubAI is free to get started. You can access all core features including Study Assistant, AI Interview, Debate, and more after creating a free account.'),
         ('Do I need to install anything?', 'No. OneHubAI runs entirely in your browser. Just sign up and start using it instantly — no downloads or installations required.'),
-        ('Do I need API keys?', 'Yes — add your OpenAI / Claude / Gemini / Stability / ElevenLabs keys in <code>.env</code>. OneHubAI never stores or shares them.'),
         ('Which AI models are supported?', 'GPT-4o, Claude 3.5 Sonnet, Gemini 1.5 Flash, FLUX (Replicate), Stable Diffusion (Stability), Whisper, and 5 ElevenLabs voices.'),
         ('What file types can I upload for studying?', 'You can upload PDF, Word (.docx), PowerPoint (.pptx), and text files. OneHubAI will read and analyse the content automatically.'),
         ('What does the Study Assistant generate from my file?', 'It generates a full summary, key points, examples, formulas, real-world applications, exam tips, common mistakes to avoid, quick revision notes, and comprehensive long notes — all from your uploaded file.'),
