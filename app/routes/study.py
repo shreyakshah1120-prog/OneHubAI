@@ -22,7 +22,7 @@ from ..services.files import extract_text
 bp = Blueprint("study", __name__)
 
 ALLOWED_DOCS = {".pdf", ".docx", ".pptx", ".ppt", ".txt", ".md"}
-MAX_FILE_BYTES = 5 * 1024 * 1024  # 5 MB per file
+MAX_FILE_BYTES = 64 * 1024 * 1024  
 MAX_COMBINED_CHARS = 8000
 MAX_SOURCE_CHARS   = 6000
 
@@ -176,7 +176,7 @@ def upload():
         file_size = file.tell()
         file.seek(0)
         if file_size > MAX_FILE_BYTES:
-            return jsonify({"ok": False, "error": f"File '{file.filename}' is too large. Max 5MB."}), 400
+            return jsonify({"ok": False, "error": f"File '{file.filename}' is too large. Max 64MB."}), 400
 
         safe = secure_filename(file.filename)
         p = Path(current_app.config["UPLOAD_FOLDER"]) / f"study_{current_user.id}_{safe}"
