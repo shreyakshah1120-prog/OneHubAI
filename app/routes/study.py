@@ -171,7 +171,7 @@ def upload():
         ext = Path(file.filename).suffix.lower()
         if ext not in ALLOWED_DOCS:
             continue
-        # Reject files over 5MB before saving
+        # Reject files over 64MB before saving
         file.seek(0, 2)
         file_size = file.tell()
         file.seek(0)
