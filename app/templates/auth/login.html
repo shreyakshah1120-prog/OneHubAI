@@ -1,0 +1,33 @@
+{% extends "_base.html" %}
+{% block title %}Log in — OneHubAI{% endblock %}
+
+{% block body %}
+<div class="auth-wrap">
+  <div class="auth-card glass glass-strong">
+    <a class="brand mb-4" href="{{ url_for('main.landing') }}">
+      <span class="brand-mark"><img src="{{ url_for('static', filename='img/logo.png') }}" alt="OneHubAI Logo" class="brand-logo-img"></span>
+      <span class="brand-name">One<span>HubAI</span></span>
+    </a>
+    <h3 class="fw-bold mb-1">Welcome back</h3>
+    <p class="muted mb-4">Log in to your AI hub.</p>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% for cat, msg in messages %}<div class="alert alert-{{ cat }}">{{ msg }}</div>{% endfor %}
+    {% endwith %}
+
+    <form method="POST">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <div class="mb-3">
+        <label class="form-label">Email</label>
+        <input class="form-control" type="email" name="email" placeholder="you@example.com" required autofocus>
+      </div>
+      <div class="mb-4">
+        <label class="form-label">Password</label>
+        <input class="form-control" type="password" name="password" placeholder="Enter your password" required minlength="6">
+      </div>
+      <button class="btn btn-neon w-100 py-2 mb-3">Log in →</button>
+      <p class="text-center muted mb-0">New user? <a href="{{ url_for('auth.signup') }}" class="gradient-text fw-bold text-decoration-none">Create an account</a></p>
+    </form>
+  </div>
+</div>
+{% endblock %}

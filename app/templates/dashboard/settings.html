@@ -1,0 +1,255 @@
+{% extends "_base_app.html" %}
+{% set active_module = 'settings' %}
+{% block title %}Settings — OneHubAI{% endblock %}
+
+{% block content %}
+<div class="mb-4">
+  <h2 class="fw-bold mb-1">⚙️ <span class="gradient-text">Settings & Profile</span></h2>
+  <p class="muted mb-0">Manage your profile, preferences and security.</p>
+</div>
+
+{% with messages = get_flashed_messages(with_categories=true) %}
+  {% if messages %}{% for cat, msg in messages %}<div class="alert alert-{{ cat }}">{{ msg }}</div>{% endfor %}{% endif %}
+{% endwith %}
+
+<!-- Profile Card -->
+<div class="glass p-4 mb-4" id="profile">
+  <div class="d-flex align-items-center gap-3 mb-4">
+    <div class="profile-avatar-wrap">
+      {% if current_user.avatar %}
+        <img src="{{ url_for('static', filename='uploads/' + current_user.avatar) }}" class="profile-avatar" alt="Profile">
+      {% else %}
+        <div class="profile-avatar-placeholder">{{ current_user.name[0]|upper }}</div>
+      {% endif %}
+    </div>
+    <div>
+      <h4 class="fw-bold mb-0">{{ current_user.name }}</h4>
+      <div class="muted">{{ current_user.email }}</div>
+      <div class="muted small">Member since {{ current_user.created_at.strftime('%B %Y') }}</div>
+    </div>
+  </div>
+
+  <h5 class="fw-bold mb-3">Edit Profile</h5>
+  <form method="POST" enctype="multipart/form-data">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <input type="hidden" name="section" value="profile">
+    <div class="row g-3">
+      <div class="col-md-6">
+        <label class="form-label">Full Name</label>
+        <input class="form-control" name="name" value="{{ current_user.name }}" required>
+      </div>
+      <div class="col-md-6">
+        <label class="form-label">Email</label>
+        <input class="form-control" value="{{ current_user.email }}" disabled>
+      </div>
+      <div class="col-12">
+        <label class="form-label">Profile Photo</label>
+        <input class="form-control" type="file" name="avatar" accept="image/*">
+      </div>
+    </div>
+    <button class="btn btn-neon mt-3">💾 Save Profile</button>
+  </form>
+</div>
+
+<!-- Stats -->
+<div class="row g-3 mb-4">
+  <div class="col-12"><h5 class="fw-bold">📊 Your Usage Statistics</h5></div>
+  {% set stat_items = [
+    ('🎯', 'AI Chats', current_user.chats|length),
+    ('🖼️', 'Images', current_user.images|length),
+    ('📚', 'Study Files', current_user.studies|length),
+    ('🎤', 'Interviews', current_user.interviews|length),
+    ('🧠', 'Debates', current_user.debates|length),
+    ('🏥', 'Health Scans', current_user.healths|length),
+  ] %}
+  {% for icon, label, count in stat_items %}
+  <div class="col-6 col-md-4 col-lg-2">
+    <div class="stat-card text-center">
+      <div style="font-size:1.6rem">{{ icon }}</div>
+      <h6 class="mt-2">{{ label }}</h6>
+      <div class="num">{{ count }}</div>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+
+<!-- Preferences -->
+<div class="glass p-4 mb-4">
+  <h5 class="fw-bold mb-3">🎨 Preferences</h5>
+  <form method="POST">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <input type="hidden" name="section" value="preferences">
+    <div class="row g-3">
+      <div class="col-md-4">
+        <label class="form-label">Theme</label>
+        <select class="form-select" name="theme" onchange="applyThemePref(this.value)">
+          <option value="dark" {% if current_user.theme=='dark' %}selected{% endif %}>🌙 Dark</option>
+          <option value="light" {% if current_user.theme=='light' %}selected{% endif %}>☀️ Light</option>
+        </select>
+      </div>
+      <div class="col-md-4">
+        <label class="form-label">Language</label>
+        <select class="form-select" name="language">
+          {% for code, label in [('en','English'),('es','Español'),('fr','Français'),('de','Deutsch'),('hi','हिन्दी'),('zh','中文')] %}
+          <option value="{{ code }}" {% if current_user.language==code %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-md-4">
+        <label class="form-label">Default Voice</label>
+        <select class="form-select" name="voice_pref">
+          {% for v in ['male','female','professional','narrator','motivational'] %}
+          <option value="{{ v }}" {% if current_user.voice_pref==v %}selected{% endif %}>{{ v|title }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-12">
+        <div class="form-check">
+          <input class="form-check-input" type="checkbox" name="notifications" id="notif" {% if current_user.notifications %}checked{% endif %}>
+          <label class="form-check-label" for="notif">Enable notifications</label>
+        </div>
+      </div>
+    </div>
+    <button class="btn btn-neon mt-3">💾 Save Preferences</button>
+  </form>
+</div>
+
+<!-- Password -->
+<div class="glass p-4 mb-4">
+  <h5 class="fw-bold mb-3">🔒 Change Password</h5>
+  <form method="POST">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <input type="hidden" name="section" value="password">
+    <div class="row g-3">
+      <div class="col-md-4">
+        <label class="form-label">Current Password</label>
+        <input class="form-control" type="password" name="current" required>
+      </div>
+      <div class="col-md-4">
+        <label class="form-label">New Password</label>
+        <input class="form-control" type="password" name="new" minlength="6" required>
+      </div>
+      <div class="col-md-4">
+        <label class="form-label">Confirm New</label>
+        <input class="form-control" type="password" name="confirm_new" minlength="6" required>
+      </div>
+    </div>
+    <button class="btn btn-ghost mt-3">🔑 Update Password</button>
+  </form>
+</div>
+
+<!-- Feedback -->
+<div class="glass p-4 mb-4" id="feedback">
+  <h5 class="fw-bold mb-1">💬 Share Your Feedback</h5>
+  <p class="muted mb-4" style="font-size:.88rem;">Help us improve OneHubAI. Your honest answers make the platform better for everyone.</p>
+
+  <div id="feedbackForm">
+    <!-- Q1 -->
+    <div class="mb-4">
+      <div class="form-label">1. Which OneHubAI feature do you use most and find most valuable?</div>
+      <div class="d-flex flex-wrap gap-2" id="q1">
+        {% for opt in ['AI Studio (chat & writing)','Study Assistant (notes & tests)','AI Interview (mock sessions)','AI Debate (critical thinking)','Image Generator','Health Assistant','Voice Tools'] %}
+        <button type="button" class="btn btn-ghost btn-sm feedback-opt" data-q="q1" data-v="{{ opt }}" onclick="selectOpt(this)">{{ opt }}</button>
+        {% endfor %}
+      </div>
+    </div>
+
+    <!-- Q2 -->
+    <div class="mb-4">
+      <div class="form-label">2. How well does the Study Assistant's summary quality meet your academic needs?</div>
+      <div class="d-flex flex-wrap gap-2" id="q2">
+        {% for opt in ['Excellent — covers everything I need','Good — minor gaps occasionally','Average — misses key concepts sometimes','Below expectations — needs improvement'] %}
+        <button type="button" class="btn btn-ghost btn-sm feedback-opt" data-q="q2" data-v="{{ opt }}" onclick="selectOpt(this)">{{ opt }}</button>
+        {% endfor %}
+      </div>
+    </div>
+
+    <!-- Q3 -->
+    <div class="mb-4">
+      <div class="form-label">3. What type of test questions are most useful for your study goals?</div>
+      <div class="d-flex flex-wrap gap-2" id="q3">
+        {% for opt in ['MCQ (Multiple Choice)','True / False','Fill in the Blanks','Short Answer','Essay / Long Answer','Mixed — all types'] %}
+        <button type="button" class="btn btn-ghost btn-sm feedback-opt" data-q="q3" data-v="{{ opt }}" onclick="selectOpt(this)">{{ opt }}</button>
+        {% endfor %}
+      </div>
+    </div>
+
+    <!-- Q4 -->
+    <div class="mb-4">
+      <div class="form-label">4. How would you rate the AI Interview feedback you received?</div>
+      <div class="d-flex flex-wrap gap-2" id="q4">
+        {% for opt in ['Very detailed and actionable','Helpful but could be more specific','Somewhat useful','Not relevant to my role / field'] %}
+        <button type="button" class="btn btn-ghost btn-sm feedback-opt" data-q="q4" data-v="{{ opt }}" onclick="selectOpt(this)">{{ opt }}</button>
+        {% endfor %}
+      </div>
+    </div>
+
+    <!-- Q5 -->
+    <div class="mb-4">
+      <div class="form-label">5. Which AI capability would add the most value to your workflow?</div>
+      <div class="d-flex flex-wrap gap-2" id="q5">
+        {% for opt in ['Smarter document analysis','Personalised study plans','Real-time progress tracking','Collaborative study sessions','Integration with Google Drive / Notion','Offline / mobile access'] %}
+        <button type="button" class="btn btn-ghost btn-sm feedback-opt" data-q="q5" data-v="{{ opt }}" onclick="selectOpt(this)">{{ opt }}</button>
+        {% endfor %}
+      </div>
+    </div>
+
+    <!-- Q6 – open text -->
+    <div class="mb-4">
+      <label class="form-label">6. Is there a specific problem or limitation you've run into that we should prioritise fixing?</label>
+      <textarea class="form-control" id="q6text" rows="3" placeholder="Describe the issue or suggestion in detail…" style="resize:vertical;"></textarea>
+    </div>
+
+    <button class="btn btn-neon" onclick="submitFeedback()">📤 Submit Feedback</button>
+    <div id="feedbackSuccess" class="alert alert-success mt-3 d-none">✅ Thank you! Your feedback has been recorded and will guide our next release.</div>
+    <div id="feedbackError" class="alert alert-danger mt-3 d-none">❌ Please answer at least 3 questions before submitting.</div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function applyThemePref(val) {
+  document.documentElement.setAttribute('data-theme', val);
+  localStorage.setItem('onehub-theme', val);
+  const ic = document.getElementById('themeIcon');
+  if (ic) ic.textContent = val === 'dark' ? '🌙' : '☀️';
+}
+
+/* ── Feedback form ── */
+const feedbackAnswers = {};
+
+function selectOpt(btn) {
+  const q = btn.dataset.q;
+  document.querySelectorAll(`.feedback-opt[data-q="${q}"]`).forEach(b => b.classList.remove('active-opt'));
+  btn.classList.add('active-opt');
+  feedbackAnswers[q] = btn.dataset.v;
+}
+
+function submitFeedback() {
+  const answered = Object.keys(feedbackAnswers).length;
+  const q6 = document.getElementById('q6text').value.trim();
+  if (answered < 3 && !q6) {
+    document.getElementById('feedbackError').classList.remove('d-none');
+    document.getElementById('feedbackSuccess').classList.add('d-none');
+    return;
+  }
+  feedbackAnswers['q6'] = q6;
+  // Store locally (no backend endpoint required — saved in browser for now)
+  localStorage.setItem('onehubai_feedback_' + Date.now(), JSON.stringify(feedbackAnswers));
+  document.getElementById('feedbackError').classList.add('d-none');
+  document.getElementById('feedbackSuccess').classList.remove('d-none');
+  document.getElementById('feedbackForm').style.opacity = '0.5';
+  document.getElementById('feedbackForm').style.pointerEvents = 'none';
+}
+</script>
+
+<style>
+.feedback-opt { transition: all 0.2s; }
+.feedback-opt.active-opt {
+  background: rgba(212,175,55,0.15) !important;
+  border-color: rgba(212,175,55,0.45) !important;
+  color: #D4AF37 !important;
+}
+</style>
+{% endblock %}

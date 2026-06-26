@@ -1,0 +1,701 @@
+{% extends "_base_app.html" %}
+{% set active_module = 'studio' %}
+{% block title %}AI Studio — OneHubAI{% endblock %}
+
+{% block content %}
+
+<!-- ── Mode Selection Screen ── -->
+<div id="modeScreen">
+  <div class="text-center mb-5 mt-3">
+    <h2 class="fw-bold mb-2">AI <span class="gradient-text">Studio</span></h2>
+    <p class="muted">Choose what you want to create today</p>
+  </div>
+
+  <div class="row g-4 justify-content-center" style="max-width:900px;margin:0 auto;">
+    <!-- Generate Information Card -->
+    <div class="col-md-4">
+      <div class="studio-mode-card glass glass-hover p-4 text-center" onclick="goMode('text')">
+        <div class="studio-icon mb-3">✍️</div>
+        <h4 class="fw-bold mb-2">Generate Information</h4>
+        <p class="muted small mb-3">Generate information by just writing simple prompt.</p>
+        <span class="chip neon">Generate info</span>
+      </div>
+    </div>
+    <!-- Generate Image Card -->
+    <div class="col-md-4">
+      <div class="studio-mode-card glass glass-hover p-4 text-center" onclick="goMode('image')">
+        <div class="studio-icon mb-3">🎨</div>
+        <h4 class="fw-bold mb-2">Generate Image</h4>
+        <p class="muted small mb-3">Create realistic images, art, posters, logos, concept art and illustrations.</p>
+        <span class="chip neon">Generate image</span>
+      </div>
+    </div>
+    <!-- Text to Voice Card -->
+    <div class="col-md-4">
+      <div class="studio-mode-card glass glass-hover p-4 text-center" onclick="goMode('voice')">
+        <div class="studio-icon mb-3">🔊</div>
+        <h4 class="fw-bold mb-2">Text to Voice</h4>
+        <p class="muted small mb-3">Convert any text into natural-sounding speech. Choose from 5 voice types.</p>
+        <span class="chip neon">Generate speech</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Recent sessions below -->
+  {% if chats or images %}
+  <div class="mt-5" style="max-width:900px;margin:2rem auto 0;">
+    <h6 class="fw-bold mb-3 muted">Recent Sessions</h6>
+    <div class="row g-2">
+      {% for c in chats[:4] %}
+      <div class="col-md-6">
+        <div class="list-row" style="cursor:pointer;" onclick="goMode('text')">
+          <div style="min-width:0;">
+            <strong class="d-block text-truncate" style="font-size:.85rem;">✍️ {{ c.title }}</strong>
+            <span class="muted small">{{ c.model }} · {{ c.created_at.strftime('%b %d') }}</span>
+          </div>
+          <span class="chip">→</span>
+        </div>
+      </div>
+      {% endfor %}
+      {% for img in images[:4] %}
+      <div class="col-md-6">
+        <div class="list-row" style="cursor:pointer;" onclick="goMode('image')">
+          <div style="min-width:0;">
+            <strong class="d-block text-truncate" style="font-size:.85rem;">🎨 {{ img.prompt[:45] }}</strong>
+            <span class="muted small">{{ img.created_at.strftime('%b %d') }}</span>
+          </div>
+          <span class="chip">→</span>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+</div>
+
+<!-- ═══════════════════════════════════════════
+     TEXT GENERATOR SCREEN
+     ═══════════════════════════════════════════ -->
+<div id="textScreen" style="display:none;">
+  <div class="d-flex align-items-center gap-3 mb-4">
+    <button class="btn btn-ghost btn-sm" onclick="goBack()">← Back</button>
+    <div>
+      <h2 class="fw-bold mb-0">Generate <span class="gradient-text">Information</span></h2>
+      <p class="muted small mb-0">Your prompt → AI refines it → response generated</p>
+    </div>
+  </div>
+
+  <div class="row g-4">
+    <div class="col-lg-8">
+
+      <!-- Step 1: User Prompt -->
+      <div class="glass p-4 mb-3">
+        <div class="d-flex align-items-center gap-2 mb-2">
+          <span class="step-badge">1</span>
+          <label class="form-label mb-0 fw-semibold">Your Prompt</label>
+          <span class="muted small ms-auto">Ctrl+Enter to generate</span>
+        </div>
+        <div style="position:relative;">
+          <textarea id="userPrompt" class="form-control auto-grow" rows="4"
+            placeholder="Write prompt"
+            style="padding-right:52px;"></textarea>
+          <!-- Microphone button inside textarea area -->
+          <button id="promptMicBtn" onclick="togglePromptMic()" title="Speak your prompt"
+            style="position:absolute;right:10px;bottom:10px;width:38px;height:38px;border-radius:50%;
+                   background:rgba(212,175,55,0.15);border:2px solid rgba(212,175,55,0.4);
+                   cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:1.1rem;
+                   transition:all 0.2s;">
+            🎤
+          </button>
+        </div>
+        <div id="promptMicStatus" class="muted small mt-1" style="display:none;">Listening… click mic to stop</div>
+      </div>
+
+      <!-- Step 2: Refined Prompt -->
+      <div class="glass p-4 mb-3" id="refinedSection" style="display:none;">
+        <div class="d-flex align-items-center justify-content-between mb-2">
+          <div class="d-flex align-items-center gap-2">
+            <span class="step-badge">2</span>
+            <label class="form-label mb-0 fw-semibold">Refined Prompt
+              <span class="chip ms-2" style="font-size:.7rem;">Auto-enhanced</span>
+            </label>
+          </div>
+          <button class="btn btn-ghost btn-sm" onclick="copyTA('refinedPrompt')">Copy</button>
+        </div>
+        <textarea id="refinedPrompt" class="form-control auto-grow" rows="4"
+          placeholder="Refined prompt appears here…"
+          style="border-color:rgba(212,175,55,0.4);background:rgba(212,175,55,0.04);"></textarea>
+        <p class="muted small mt-2 mb-0">You may edit this before the response generates.</p>
+      </div>
+
+      <!-- Step 3: AI Response -->
+      <div class="glass p-4" id="responseSection" style="display:none;">
+        <div class="d-flex align-items-center justify-content-between mb-3">
+          <div class="d-flex align-items-center gap-2">
+            <span class="step-badge">3</span>
+            <label class="form-label mb-0 fw-semibold">Response</label>
+            <span class="chip" id="providerChip"></span>
+          </div>
+          <div class="d-flex gap-2">
+            <button class="btn btn-ghost btn-sm" onclick="copyDiv('aiResponse')">Copy</button>
+            <button class="btn btn-ghost btn-sm" onclick="downloadText()">Download</button>
+          </div>
+        </div>
+        <div id="aiResponse" class="bubble" style="min-height:120px;line-height:1.7;"></div>
+      </div>
+
+      <!-- Buttons -->
+      <div class="d-flex flex-wrap gap-3 mt-3">
+        <button id="generateBtn" class="btn btn-neon px-4" onclick="runGenerate()"> Generate</button>
+        <button id="regenerateBtn" class="btn btn-ghost px-4" onclick="runGenerate()" style="display:none;"> Regenerate</button>
+        <button class="btn btn-ghost px-3" onclick="clearText()">✕ Clear</button>
+      </div>
+
+      <!-- Loading -->
+      <div id="loadingBar" style="display:none;" class="mt-3">
+        <div class="d-flex align-items-center gap-3 muted">
+          <span class="spinner"></span>
+          <span id="loadingMsg">Refining your prompt…</span>
+        </div>
+        <div class="progress-track mt-2"><div class="progress-fill" id="progressFill"></div></div>
+      </div>
+    </div>
+
+    <!-- Recent text sessions -->
+    <div class="col-lg-4">
+      <div class="glass p-4">
+        <h6 class="fw-bold mb-3">Recent</h6>
+        <div class="scrollbox">
+          {% if chats %}
+            {% for c in chats %}
+            <div class="list-row mb-2">
+              <div style="min-width:0;">
+                <strong class="d-block text-truncate" style="font-size:.82rem;">{{ c.title }}</strong>
+                <span class="muted small">{{ c.model }} · {{ c.created_at.strftime('%b %d') }}</span>
+              </div>
+            </div>
+            {% endfor %}
+          {% else %}
+            <div class="text-center muted py-3"><div style="font-size:2rem">💬</div><p class="small mb-0">No sessions yet.</p></div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     IMAGE GENERATOR SCREEN
+     ═══════════════════════════════════════════ -->
+<div id="imageScreen" style="display:none;">
+  <div class="d-flex align-items-center gap-3 mb-4">
+    <button class="btn btn-ghost btn-sm" onclick="goBack()">← Back</button>
+    <div>
+      <h2 class="fw-bold mb-0">Generate <span class="gradient-text">Image</span></h2>
+      <p class="muted small mb-0">Describe what you want → AI refines the prompt → image created</p>
+    </div>
+  </div>
+
+  <div class="row g-4">
+    <div class="col-lg-8">
+      <div class="glass p-4 mb-3">
+        <label class="form-label fw-semibold mb-2">Describe your image</label>
+        <textarea id="imgPrompt" class="form-control auto-grow" rows="3"
+          placeholder="e.g. A futuristic city with golden lights and flying cars…"></textarea>
+
+        <div class="row g-3 mt-2">
+          <div class="col-sm-6">
+            <label class="form-label">Style</label>
+            <select id="imgStyle" class="form-select">
+              <option value="realistic">Realistic</option>
+              <option value="anime">Anime Art</option>
+              <option value="logo">Logo / Icon</option>
+              <option value="poster">Poster</option>
+              <option value="concept art">Concept Art</option>
+              <option value="illustration">Illustration</option>
+              <option value="watercolor">Watercolor</option>
+            </select>
+          </div>
+          <div class="col-sm-6">
+            <label class="form-label">Provider</label>
+            <select id="imgProvider" class="form-select">
+              <option value="openai">DALL-E 3 (OpenAI)</option>
+              <option value="stability">Stable Diffusion</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <!-- Refined image prompt -->
+      <div class="glass p-4 mb-3" id="imgRefinedSection" style="display:none;">
+        <div class="d-flex align-items-center gap-2 mb-2">
+          <span class="step-badge">✨</span>
+          <label class="form-label mb-0 fw-semibold">Refined Image Prompt</label>
+        </div>
+        <div id="imgRefinedText" class="bubble" style="font-size:.88rem;"></div>
+      </div>
+
+      <!-- Generated image -->
+      <div class="glass p-4" id="imgResultSection" style="display:none;">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <label class="form-label mb-0 fw-semibold">🖼️ Generated Image</label>
+          <div class="d-flex gap-2">
+            <button class="btn btn-ghost btn-sm" onclick="downloadImg()">⬇ Download</button>
+            <button class="btn btn-ghost btn-sm" onclick="runImage()">🔄 Regenerate</button>
+          </div>
+        </div>
+        <img id="generatedImg" src="" alt="Generated" style="width:100%;border-radius:12px;display:block;">
+      </div>
+
+      <div class="d-flex gap-3 mt-3">
+        <button class="btn btn-neon px-4" onclick="runImage()" id="imgBtn">🎨 Generate Image</button>
+        <button class="btn btn-ghost px-3" onclick="clearImage()">✕ Clear</button>
+      </div>
+
+      <div id="imgLoading" style="display:none;" class="mt-3">
+        <div class="d-flex align-items-center gap-3 muted">
+          <span class="spinner"></span>
+          <span id="imgLoadingMsg">Refining your image prompt…</span>
+        </div>
+        <div class="progress-track mt-2"><div class="progress-fill" id="imgProgressFill"></div></div>
+      </div>
+    </div>
+
+    <!-- Past images -->
+    <div class="col-lg-4">
+      <div class="glass p-4">
+        <h6 class="fw-bold mb-3">🕐 Recent Images</h6>
+        <div class="scrollbox">
+          {% if images %}
+            <div class="img-grid" style="grid-template-columns:1fr 1fr;">
+              {% for img in images %}
+              {% set img_url = url_for('static', filename='generated/' + img.file_path) %}
+              <figure style="margin:0;cursor:pointer;" onclick="document.getElementById('generatedImg').src='{{ img_url }}';document.getElementById('imgResultSection').style.display='block';goMode('image');">
+                <img src="{{ url_for('static', filename='generated/' + img.file_path) }}" alt="img" style="width:100%;height:80px;object-fit:cover;border-radius:8px;">
+              </figure>
+              {% endfor %}
+            </div>
+          {% else %}
+            <div class="text-center muted py-3"><div style="font-size:2rem">🖼️</div><p class="small mb-0">No images yet.</p></div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     TEXT TO VOICE SCREEN
+     ═══════════════════════════════════════════ -->
+<div id="voiceScreen" style="display:none;">
+  <div class="d-flex align-items-center gap-3 mb-4">
+    <button class="btn btn-ghost btn-sm" onclick="goBack()">← Back</button>
+    <div>
+      <h2 class="fw-bold mb-0">Text to <span class="gradient-text">Voice</span></h2>
+      <p class="muted small mb-0">Type or paste text → choose voice type → download audio</p>
+    </div>
+  </div>
+
+  <div class="row g-4">
+    <div class="col-lg-8">
+      <div class="glass p-4 mb-3">
+        <label class="form-label fw-semibold mb-2">Your Text</label>
+        <textarea id="studioTtsText" class="form-control auto-grow" rows="5"
+          placeholder="Type or paste what you want to hear…"></textarea>
+
+        <!-- Voice type selector -->
+        <div class="mt-3">
+          <label class="form-label fw-semibold mb-2">Choose Voice Type</label>
+          <div class="row g-2">
+            {% set voice_opts = [
+              ('male','👨','Male','Deep male voice – Josh'),
+              ('female','👩','Female','Warm female voice – Bella'),
+              ('professional','🎙️','Professional','Clear & authoritative – Rachel'),
+              ('narrator','📖','Narrator','Rich storyteller voice – Adam'),
+              ('motivational','💪','Motivational','Energetic & inspiring – Arnold'),
+            ] %}
+            {% for vkey, icon, label, desc in voice_opts %}
+            <div class="col-6 col-md-4">
+              <div class="voice-type-card glass p-3 text-center {% if vkey == 'professional' %}selected-voice{% endif %}"
+                   data-voice="{{ vkey }}" onclick="selectVoice(this, '{{ vkey }}')">
+                <div style="font-size:1.6rem;">{{ icon }}</div>
+                <div class="fw-semibold small mt-1">{{ label }}</div>
+                <div class="muted" style="font-size:.7rem;">{{ desc }}</div>
+              </div>
+            </div>
+            {% endfor %}
+          </div>
+          <input type="hidden" id="selectedVoiceKey" value="professional">
+        </div>
+      </div>
+
+      <!-- Audio result -->
+      <div class="glass p-4 mb-3" id="studioTtsResult" style="display:none;">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <label class="form-label mb-0 fw-semibold">🔊 Generated Audio</label>
+        </div>
+        <audio id="studioTtsAudio" controls style="width:100%;" class="mb-3"></audio>
+        <a id="studioTtsDownload" class="btn btn-neon w-100" download="onehubai-voice.mp3">⬇ Download MP3</a>
+      </div>
+
+      <div class="d-flex gap-3 mt-3">
+        <button class="btn btn-neon px-4" onclick="runStudioTts()" id="studioTtsBtn">🔊 Convert to Voice</button>
+        <button class="btn btn-ghost px-3" onclick="clearStudioTts()">✕ Clear</button>
+      </div>
+
+      <div id="studioTtsLoading" style="display:none;" class="mt-3">
+        <div class="d-flex align-items-center gap-3 muted">
+          <span class="spinner"></span>
+          <span>Synthesizing voice…</span>
+        </div>
+        <div class="progress-track mt-2"><div class="progress-fill" id="studioTtsFill"></div></div>
+      </div>
+    </div>
+
+    <div class="col-lg-4">
+      <div class="glass p-4">
+        <h6 class="fw-bold mb-3">💡 Voice Guide</h6>
+        <div class="muted small" style="line-height:1.8;">
+          <p class="mb-2">1. Type or paste your text in the box.</p>
+          <p class="mb-2">2. Choose a voice type that suits your content.</p>
+          <p class="mb-2">3. Click <strong>Convert to Voice</strong>.</p>
+          <p class="mb-2">4. Listen to the preview, then download.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+// ── Screen router ──
+function goMode(mode) {
+  document.getElementById('modeScreen').style.display = 'none';
+  document.getElementById('textScreen').style.display = mode==='text' ? 'block' : 'none';
+  document.getElementById('imageScreen').style.display = mode==='image' ? 'block' : 'none';
+  document.getElementById('voiceScreen').style.display = mode==='voice' ? 'block' : 'none';
+}
+function goBack() {
+  document.getElementById('modeScreen').style.display = 'block';
+  document.getElementById('textScreen').style.display = 'none';
+  document.getElementById('imageScreen').style.display = 'none';
+  document.getElementById('voiceScreen').style.display = 'none';
+}
+
+// ── Auto-grow textareas ──
+document.querySelectorAll('textarea.auto-grow').forEach(ta => {
+  ta.addEventListener('input', () => { ta.style.height='auto'; ta.style.height=ta.scrollHeight+'px'; });
+});
+
+// ── Copy helpers ──
+function copyTA(id) {
+  navigator.clipboard.writeText(document.getElementById(id).value)
+    .then(() => showToast('Copied!','success'));
+}
+function copyDiv(id) {
+  navigator.clipboard.writeText(document.getElementById(id).innerText)
+    .then(() => showToast('Copied!','success'));
+}
+
+// ── Progress ──
+let _pt = null;
+function startProgress(elId, msg, msgElId) {
+  const bar = document.getElementById(elId);
+  const fill = bar.querySelector('.progress-fill');
+  const label = document.getElementById(msgElId);
+  if (label) label.textContent = msg;
+  bar.style.display = 'block';
+  fill.style.width = '0%';
+  let pct = 0;
+  clearInterval(_pt);
+  _pt = setInterval(() => { pct = Math.min(pct + Math.random()*8, 85); fill.style.width=pct+'%'; }, 200);
+}
+function finishProgress(elId) {
+  clearInterval(_pt);
+  const bar = document.getElementById(elId);
+  const fill = bar.querySelector('.progress-fill');
+  fill.style.width = '100%';
+  setTimeout(() => { bar.style.display='none'; fill.style.width='0%'; }, 500);
+}
+
+// ══════════════════════════════════
+//  PROMPT MICROPHONE
+// ══════════════════════════════════
+const PromptRec = window.SpeechRecognition || window.webkitSpeechRecognition;
+let promptRecog = null;
+let promptRecording = false;
+
+function togglePromptMic() {
+  if (!PromptRec) { showToast('Speech recognition not supported. Use Chrome/Edge.', 'error'); return; }
+  const btn = document.getElementById('promptMicBtn');
+  const status = document.getElementById('promptMicStatus');
+  if (promptRecording) {
+    promptRecog && promptRecog.stop();
+    return;
+  }
+  promptRecog = new PromptRec();
+  promptRecog.lang = 'en-US';
+  promptRecog.interimResults = true;
+  promptRecog.continuous = true;
+  promptRecog.onstart = () => {
+    promptRecording = true;
+    btn.style.background = 'rgba(255,60,60,0.25)';
+    btn.style.borderColor = '#ff3c3c';
+    btn.textContent = '🔴';
+    status.style.display = 'block';
+  };
+  promptRecog.onresult = (e) => {
+    let final = '', interim = '';
+    for (let i = e.resultIndex; i < e.results.length; i++) {
+      if (e.results[i].isFinal) final += e.results[i][0].transcript;
+      else interim += e.results[i][0].transcript;
+    }
+    const ta = document.getElementById('userPrompt');
+    const existing = ta.dataset.saved || '';
+    ta.value = existing + (existing?' ':'') + final + interim;
+    ta.style.height='auto'; ta.style.height=ta.scrollHeight+'px';
+    if (final) ta.dataset.saved = (ta.dataset.saved||'') + final + ' ';
+  };
+  promptRecog.onend = () => {
+    promptRecording = false;
+    btn.style.background = 'rgba(212,175,55,0.15)';
+    btn.style.borderColor = 'rgba(212,175,55,0.4)';
+    btn.textContent = '🎤';
+    status.style.display = 'none';
+  };
+  promptRecog.onerror = (e) => {
+    promptRecording = false;
+    btn.style.background = 'rgba(212,175,55,0.15)';
+    btn.style.borderColor = 'rgba(212,175,55,0.4)';
+    btn.textContent = '🎤';
+    status.style.display = 'none';
+    showToast('Mic error: ' + e.error, 'error');
+  };
+  try { promptRecog.start(); } catch(e) { showToast('Could not start mic.', 'error'); }
+}
+
+// ══════════════════════════════════
+//  TEXT GENERATION
+// ══════════════════════════════════
+function clearText() {
+  document.getElementById('userPrompt').value='';
+  document.getElementById('userPrompt').dataset.saved='';
+  document.getElementById('refinedPrompt').value='';
+  document.getElementById('aiResponse').innerHTML='';
+  ['refinedSection','responseSection'].forEach(id=>document.getElementById(id).style.display='none');
+  document.getElementById('generateBtn').style.display='';
+  document.getElementById('regenerateBtn').style.display='none';
+  document.getElementById('loadingBar').style.display='none';
+}
+
+function downloadText() {
+  const text = document.getElementById('aiResponse').innerText;
+  if (!text) return;
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([text],{type:'text/plain'}));
+  a.download = 'onehubai-response.txt'; a.click();
+}
+
+async function runGenerate() {
+  const userPrompt = document.getElementById('userPrompt').value.trim();
+  if (!userPrompt) { showToast('Please enter a prompt.','error'); return; }
+
+  document.getElementById('generateBtn').disabled = true;
+  document.getElementById('regenerateBtn').disabled = true;
+
+  // Step 1 — Refine
+  startProgress('loadingBar','Refining your prompt with AI…','loadingMsg');
+  document.getElementById('refinedSection').style.display = 'block';
+  document.getElementById('refinedPrompt').value = '';
+  document.getElementById('responseSection').style.display = 'none';
+
+  let refined = userPrompt;
+  try {
+    const r = await postJson('{{ url_for("ai_studio.enhance") }}', { prompt: userPrompt });
+    if (r.ok && r.data) refined = r.data;
+  } catch(e) {}
+
+  document.getElementById('refinedPrompt').value = refined;
+  const rta = document.getElementById('refinedPrompt');
+  rta.style.height='auto'; rta.style.height=rta.scrollHeight+'px';
+
+  // Step 2 — Generate
+  startProgress('loadingBar','Generating response from refined prompt…','loadingMsg');
+  document.getElementById('responseSection').style.display = 'block';
+  document.getElementById('aiResponse').innerHTML =
+    '<div class="d-flex align-items-center gap-2 muted"><span class="spinner"></span> AI is writing…</div>';
+
+  const finalPrompt = document.getElementById('refinedPrompt').value.trim() || refined;
+  const genRes = await postJson('{{ url_for("ai_studio.generate") }}', {
+    prompt: finalPrompt, original: userPrompt, model: 'gemini'
+  });
+
+  finishProgress('loadingBar');
+  document.getElementById('generateBtn').disabled = false;
+  document.getElementById('regenerateBtn').disabled = false;
+
+  if (genRes.ok) {
+    document.getElementById('aiResponse').innerHTML = markdownLite(genRes.data || '');
+    document.getElementById('providerChip').textContent = (genRes.provider||'AI').toUpperCase();
+    document.getElementById('generateBtn').style.display = 'none';
+    document.getElementById('regenerateBtn').style.display = '';
+    showToast('Response generated!','success');
+    if (window.MathJax && MathJax.typesetPromise)
+      MathJax.typesetPromise([document.getElementById('aiResponse')]);
+  } else {
+    document.getElementById('aiResponse').innerHTML =
+      `<div class="alert alert-danger mb-0">${escapeHtml(genRes.error||'Failed. Check your API key.')}</div>`;
+    showToast('Generation failed','error');
+  }
+}
+document.getElementById('userPrompt').addEventListener('keydown', e => {
+  if (e.key==='Enter' && (e.ctrlKey||e.metaKey)) runGenerate();
+});
+
+// ══════════════════════════════════
+//  IMAGE GENERATION
+// ══════════════════════════════════
+function clearImage() {
+  document.getElementById('imgPrompt').value='';
+  ['imgRefinedSection','imgResultSection'].forEach(id=>document.getElementById(id).style.display='none');
+  document.getElementById('imgLoading').style.display='none';
+}
+
+function downloadImg() {
+  const src = document.getElementById('generatedImg').src;
+  if (!src) return;
+  const a = document.createElement('a');
+  a.href = src; a.download='onehubai-image.png'; a.click();
+}
+
+async function runImage() {
+  const prompt = document.getElementById('imgPrompt').value.trim();
+  if (!prompt) { showToast('Please describe your image.','error'); return; }
+  const style = document.getElementById('imgStyle').value;
+  const provider = document.getElementById('imgProvider').value;
+  const fullPrompt = style !== 'realistic' ? `${prompt}, ${style} style` : prompt;
+
+  document.getElementById('imgBtn').disabled = true;
+
+  startProgress('imgLoading','Refining your image prompt…','imgLoadingMsg');
+  document.getElementById('imgRefinedSection').style.display = 'block';
+  document.getElementById('imgRefinedText').textContent = '…';
+
+  let refined = fullPrompt;
+  try {
+    const r = await postJson('{{ url_for("ai_studio.enhance") }}', { prompt: fullPrompt });
+    if (r.ok && r.data) refined = r.data;
+  } catch(e) {}
+
+  document.getElementById('imgRefinedText').textContent = refined;
+
+  startProgress('imgLoading','Generating image…','imgLoadingMsg');
+  document.getElementById('imgResultSection').style.display = 'block';
+  document.getElementById('generatedImg').src = '';
+  document.getElementById('generatedImg').style.opacity = '0.3';
+
+  const genRes = await postJson('{{ url_for("image.generate") }}', {
+    prompt: refined, provider: provider, use_enhanced: false
+  });
+
+  finishProgress('imgLoading');
+  document.getElementById('imgBtn').disabled = false;
+
+  if (genRes.ok) {
+    const img = document.getElementById('generatedImg');
+    img.src = genRes.url; img.style.opacity='1';
+    showToast('Image generated!','success');
+  } else {
+    document.getElementById('imgResultSection').style.display='none';
+    showToast(genRes.error||'Image generation failed.','error');
+  }
+}
+
+// ══════════════════════════════════
+//  TEXT TO VOICE (Studio)
+// ══════════════════════════════════
+function selectVoice(el, key) {
+  document.querySelectorAll('.voice-type-card').forEach(c => c.classList.remove('selected-voice'));
+  el.classList.add('selected-voice');
+  document.getElementById('selectedVoiceKey').value = key;
+}
+
+function clearStudioTts() {
+  document.getElementById('studioTtsText').value = '';
+  document.getElementById('studioTtsResult').style.display = 'none';
+  document.getElementById('studioTtsLoading').style.display = 'none';
+}
+
+async function runStudioTts() {
+  const text = document.getElementById('studioTtsText').value.trim();
+  const voice = document.getElementById('selectedVoiceKey').value;
+  if (!text) { showToast('Please enter some text first.', 'error'); return; }
+
+  document.getElementById('studioTtsBtn').disabled = true;
+  document.getElementById('studioTtsLoading').style.display = 'block';
+  const fill = document.getElementById('studioTtsFill');
+  fill.style.width = '0%';
+  let pct = 0;
+  const t = setInterval(() => { pct = Math.min(pct + Math.random()*6, 85); fill.style.width=pct+'%'; }, 200);
+
+  const res = await postJson('{{ url_for("voice.tts") }}', { text, voice });
+
+  clearInterval(t);
+  fill.style.width = '100%';
+  setTimeout(() => { document.getElementById('studioTtsLoading').style.display='none'; fill.style.width='0%'; }, 400);
+  document.getElementById('studioTtsBtn').disabled = false;
+
+  if (res.ok) {
+    document.getElementById('studioTtsResult').style.display = 'block';
+    const audio = document.getElementById('studioTtsAudio');
+    audio.src = res.url;
+    audio.play();
+    document.getElementById('studioTtsDownload').href = res.url;
+    showToast('Voice generated!', 'success');
+  } else {
+    showToast(res.error || 'Voice generation failed. Check ElevenLabs API key.', 'error');
+  }
+}
+</script>
+
+<style>
+.studio-mode-card {
+  cursor: pointer;
+  border: 2px solid rgba(212,175,55,0.15);
+  transition: all 0.25s;
+  border-radius: 20px;
+}
+.studio-mode-card:hover {
+  border-color: #70706e;
+  transform: translateY(-6px);
+  box-shadow: 0 20px 50px rgba(133, 124, 96, 0.827);
+}
+.studio-icon {
+  font-size: 3rem;
+  display: block;
+}
+.step-badge {
+  width: 24px; height: 24px; border-radius: 50%;
+  background: linear-gradient(135deg,#666564,#81807e);
+  color: #050505; font-size:.78rem; font-weight:800;
+  display: inline-grid; place-items:center; flex-shrink:0;
+}
+.progress-track { height:3px; border-radius:999px; background:rgba(212,175,55,0.15); overflow:hidden; }
+.progress-fill { height:100%; border-radius:999px; background:linear-gradient(90deg,#4e4e4d,#868583); transition:width 0.25s ease; width:0%; }
+.voice-type-card {
+  cursor: pointer;
+  border: 2px solid rgba(212,175,55,0.15);
+  border-radius: 14px;
+  transition: all 0.2s;
+}
+.voice-type-card:hover { border-color: rgba(122, 121, 118, 0.5); transform: translateY(-2px); }
+.voice-type-card.selected-voice {
+  border-color: #858481;
+  background: rgba(212,175,55,0.1);
+  box-shadow: 0 0 16px rgba(212,175,55,0.2);
+}
+#promptMicBtn:hover { background: rgba(212,175,55,0.3) !important; transform: scale(1.1); }
+</style>
+{% endblock %}

@@ -1,0 +1,285 @@
+{% extends "_base.html" %}
+
+{% block body %}
+<nav class="navbar-glass">
+  <div class="container-fluid d-flex align-items-center justify-content-between">
+    <div class="d-flex align-items-center gap-3">
+      <button class="icon-btn border-0 d-none" id="sidebarToggle" onclick="toggleSidebar()">☰</button>
+      <a class="brand" href="{{ url_for('dashboard.home') }}">
+        <span class="brand-mark"><img src="{{ url_for('static', filename='img/logo.png') }}" alt="OneHubAI Logo" class="brand-logo-img"></span>
+        <span class="brand-name d-none d-sm-inline">One<span>HubAI</span></span>
+      </a>
+      <input class="nav-search d-none d-md-block" placeholder="Search prompts, history, modules… (⌘K)" />
+    </div>
+    <div class="d-flex align-items-center gap-2">
+      <button class="icon-btn" onclick="toggleTheme()" title="Toggle theme"><span id="themeIcon">🌙</span></button>
+
+      <!-- ── Notification Bell ── -->
+      <div class="notif-bell-wrap" style="position:relative;">
+        <button class="icon-btn notif-bell-btn" id="notifBellBtn" onclick="openNotifDrawer()" title="Notifications" style="position:relative;">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+            <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+          </svg>
+          <span class="notif-badge" id="notifBadge" style="display:none;">0</span>
+        </button>
+      </div>
+
+      <div class="dropdown">
+        <button class="btn p-0 border-0 bg-transparent d-flex align-items-center gap-2" data-bs-toggle="dropdown" aria-expanded="false">
+          {% if current_user.avatar %}
+            <img src="{{ url_for('static', filename='uploads/' + current_user.avatar) }}" class="avatar" style="object-fit:cover;" alt="avatar">
+          {% else %}
+            <span class="avatar">{{ current_user.name[0]|upper }}</span>
+          {% endif %}
+          <span class="d-none d-md-inline fw-semibold">Welcome, {{ current_user.name.split()[0] }}</span>
+        </button>
+        <ul class="dropdown-menu dropdown-menu-end glass">
+          <li><a class="dropdown-item" href="{{ url_for('settings.index') }}#profile">Profile</a></li>
+          <li><a class="dropdown-item" href="{{ url_for('settings.index') }}">Settings</a></li>
+          <li><a class="dropdown-item" href="{{ url_for('history.index') }}">History</a></li>
+          <li><hr class="dropdown-divider"></li>
+          <li><a class="dropdown-item text-danger" href="{{ url_for('auth.logout') }}">Logout</a></li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</nav>
+
+<!-- ══════════════ NOTIFICATION DRAWER ══════════════ -->
+<div class="notif-overlay" id="notifOverlay" onclick="closeNotifDrawer()"></div>
+<aside class="notif-drawer" id="notifDrawer">
+  <div class="notif-drawer-header">
+    <div>
+      <div class="notif-drawer-title">Notification</div>
+      <div class="notif-drawer-sub" id="notifSubtitle">Loading…</div>
+    </div>
+    <div class="d-flex align-items-center gap-2">
+      <button class="notif-mark-all-btn" id="markAllBtn" onclick="markAllRead()" title="Mark all read">✓ All read</button>
+      <button class="notif-close-btn" onclick="closeNotifDrawer()">✕</button>
+    </div>
+  </div>
+
+  <div class="notif-welcome-banner">
+    <div class="notif-welcome-icon">🔔</div>
+    <div>
+      <strong>Welcome to OneHubAI</strong>
+      <div style="font-size:.78rem;opacity:.75;margin-top:2px;">Stay updated with the latest features, tools & announcements.</div>
+    </div>
+  </div>
+
+  <div class="notif-list" id="notifList">
+    <div class="notif-loading">
+      <span class="notif-spinner"></span> Loading notifications…
+    </div>
+  </div>
+</aside>
+<!-- ══════════════ END NOTIFICATION DRAWER ══════════════ -->
+
+<div class="app-shell">
+  <aside class="sidebar" id="mainSidebar">
+    <!-- Sidebar brand for mobile -->
+    <div class="d-flex align-items-center gap-2 px-2 mb-3 d-none d-lg-none">
+      <span class="brand-mark"><img src="{{ url_for('static', filename='img/logo.png') }}" alt="OneHubAI" class="brand-logo-img"></span>
+      <span class="brand-name">One<span>HubAI</span></span>
+    </div>
+
+    <div class="sidebar-section">Workspace</div>
+    {% set m = active_module|default('home') %}
+    <a class="sidebar-link {% if m=='home' %}active{% endif %}" href="{{ url_for('dashboard.home') }}">🏠 <span>Dashboard</span></a>
+
+    <div class="sidebar-section">AI Tools</div>
+    <a class="sidebar-link {% if m=='studio' %}active{% endif %}" href="{{ url_for('ai_studio.index') }}">🎯 <span>AI Studio</span></a>
+    <a class="sidebar-link {% if m=='interview' %}active{% endif %}" href="{{ url_for('interview.index') }}">🎤 <span>AI Interview</span></a>
+    <a class="sidebar-link {% if m=='debate' %}active{% endif %}" href="{{ url_for('debate.index') }}">🧠 <span>AI Debate</span></a>
+    <a class="sidebar-link {% if m=='study' %}active{% endif %}" href="{{ url_for('study.index') }}">📚 <span>Study Assistant</span></a>
+    <a class="sidebar-link {% if m=='health' %}active{% endif %}" href="{{ url_for('health.index') }}">🏥 <span>Health Assistant</span></a>
+
+
+    <div class="sidebar-section">Account</div>
+    <a class="sidebar-link {% if m=='history' %}active{% endif %}" href="{{ url_for('history.index') }}">📜 <span>History</span></a>
+    <a class="sidebar-link {% if m=='settings' %}active{% endif %}" href="{{ url_for('settings.index') }}#profile">👤 <span>Profile</span></a>
+    <a class="sidebar-link {% if m=='settings' %}active{% endif %}" href="{{ url_for('settings.index') }}">⚙️ <span>Settings</span></a>
+    <a class="sidebar-link text-danger-soft" href="{{ url_for('auth.logout') }}">🚪 <span>Logout</span></a>
+
+    <!-- User info at bottom -->
+    <div class="sidebar-user mt-auto pt-3 border-top">
+      <div class="d-flex align-items-center gap-2 px-2">
+        {% if current_user.avatar %}
+          <img src="{{ url_for('static', filename='uploads/' + current_user.avatar) }}" class="avatar" style="width:32px;height:32px;object-fit:cover;" alt="avatar">
+        {% else %}
+          <span class="avatar" style="width:32px;height:32px;font-size:.85rem">{{ current_user.name[0]|upper }}</span>
+        {% endif %}
+        <div>
+          <div class="fw-semibold small">{{ current_user.name }}</div>
+          <div class="muted" style="font-size:.72rem">{{ current_user.email }}</div>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Sidebar overlay for mobile -->
+  <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
+
+  <main class="content fade-in">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for cat, msg in messages %}
+          <div class="alert alert-{{ cat }} alert-dismissible" role="alert">
+            {{ msg }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+          </div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+
+    {% block content %}{% endblock %}
+  </main>
+</div>
+
+<script>
+function toggleSidebar() {
+  document.getElementById('mainSidebar').classList.toggle('open');
+  document.getElementById('sidebarOverlay').classList.toggle('show');
+}
+// Apply saved theme on load
+(function() {
+  const t = localStorage.getItem('onehub-theme') || '{{ current_user.theme or "dark" }}';
+  document.documentElement.setAttribute('data-theme', t);
+  const ic = document.getElementById('themeIcon');
+  if (ic) ic.textContent = t === 'dark' ? '🌙' : '☀️';
+})();
+
+/* ── Notification Drawer ── */
+const NOTIF_API = '/app/notifications/';
+
+function openNotifDrawer() {
+  document.getElementById('notifDrawer').classList.add('open');
+  document.getElementById('notifOverlay').classList.add('show');
+  loadNotifications();
+}
+function closeNotifDrawer() {
+  document.getElementById('notifDrawer').classList.remove('open');
+  document.getElementById('notifOverlay').classList.remove('show');
+}
+
+const CATEGORY_META = {
+  general:  { icon: '🔔', label: 'General',          color: '#6b7db3' },
+  feature:  { icon: '✨', label: 'Feature Release',   color: '#D4AF37' },
+  tool:     { icon: '🛠️', label: 'New AI Tool',       color: '#7c5cff' },
+  update:   { icon: '🔄', label: 'Product Update',    color: '#00c6ae' },
+  study:    { icon: '📚', label: 'Study Module',      color: '#4ade80' },
+  test:     { icon: '📝', label: 'Test Generator',    color: '#fb923c' },
+  account:  { icon: '👤', label: 'Account',           color: '#38bdf8' },
+  system:   { icon: '⚙️', label: 'System',            color: '#a78bfa' },
+};
+
+async function loadNotifications() {
+  try {
+    const res = await fetch(NOTIF_API);
+    const data = await res.json();
+    if (!data.ok) return;
+    renderNotifications(data.notifications, data.unread);
+    updateBadge(data.unread);
+  } catch(e) {
+    document.getElementById('notifList').innerHTML = '<div class="notif-empty">Could not load notifications.</div>';
+  }
+}
+
+function updateBadge(count) {
+  const badge = document.getElementById('notifBadge');
+  if (count > 0) {
+    badge.textContent = count > 99 ? '99+' : count;
+    badge.style.display = 'flex';
+  } else {
+    badge.style.display = 'none';
+  }
+}
+
+function renderNotifications(notes, unread) {
+  const subtitle = document.getElementById('notifSubtitle');
+  subtitle.textContent = unread > 0 ? `${unread} unread notification${unread !== 1 ? 's' : ''}` : 'All caught up ✓';
+
+  const list = document.getElementById('notifList');
+  if (!notes.length) {
+    list.innerHTML = '<div class="notif-empty">No notifications yet.</div>';
+    return;
+  }
+
+  list.innerHTML = notes.map(n => {
+    const meta = CATEGORY_META[n.category] || CATEGORY_META.general;
+    return `
+      <div class="notif-item ${n.is_read ? 'read' : 'unread'}" id="notif-${n.id}" onclick="markRead(${n.id}, this)">
+        <div class="notif-item-icon" style="background:${meta.color}22;border-color:${meta.color}44;">
+          ${meta.icon}
+        </div>
+        <div class="notif-item-body">
+          <div class="notif-item-category" style="color:${meta.color};">${meta.label}</div>
+          <div class="notif-item-title">${escHtml(n.title)}</div>
+          <div class="notif-item-text">${escHtml(n.body || '')}</div>
+          <div class="notif-item-time">${n.created_at}</div>
+        </div>
+        ${!n.is_read ? `<div class="notif-unread-dot" style="background:${meta.color};"></div>` : ''}
+      </div>`;
+  }).join('');
+}
+
+async function markRead(id, el) {
+  if (el.classList.contains('read')) return;
+  try {
+    await fetch(`${NOTIF_API}${id}/read`, { method: 'POST', headers: { 'X-CSRFToken': getCSRF() } });
+    el.classList.remove('unread');
+    el.classList.add('read');
+    const dot = el.querySelector('.notif-unread-dot');
+    if (dot) dot.remove();
+    // decrement badge
+    const badge = document.getElementById('notifBadge');
+    const cur = parseInt(badge.textContent) || 0;
+    updateBadge(Math.max(0, cur - 1));
+    const sub = document.getElementById('notifSubtitle');
+    const newCount = Math.max(0, cur - 1);
+    sub.textContent = newCount > 0 ? `${newCount} unread notification${newCount !== 1 ? 's' : ''}` : 'All caught up ✓';
+  } catch(e) {}
+}
+
+async function markAllRead() {
+  try {
+    await fetch(`${NOTIF_API}read-all`, { method: 'POST', headers: { 'X-CSRFToken': getCSRF() } });
+    document.querySelectorAll('.notif-item.unread').forEach(el => {
+      el.classList.remove('unread'); el.classList.add('read');
+      const dot = el.querySelector('.notif-unread-dot');
+      if (dot) dot.remove();
+    });
+    updateBadge(0);
+    document.getElementById('notifSubtitle').textContent = 'All caught up ✓';
+  } catch(e) {}
+}
+
+function getCSRF() {
+  const m = document.cookie.match(/csrf_token=([^;]+)/);
+  return m ? m[1] : '';
+}
+
+function escHtml(s) {
+  return (s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// Poll for new notifications every 60s
+setInterval(async () => {
+  try {
+    const res = await fetch(NOTIF_API);
+    const data = await res.json();
+    if (data.ok) updateBadge(data.unread);
+  } catch(e) {}
+}, 60000);
+
+// Initial badge load
+(async () => {
+  try {
+    const res = await fetch(NOTIF_API);
+    const data = await res.json();
+    if (data.ok) updateBadge(data.unread);
+  } catch(e) {}
+})();
+</script>
+{% endblock %}

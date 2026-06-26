@@ -1,0 +1,148 @@
+{% extends "_base_public.html" %}
+
+{% block content %}
+<section class="hero">
+  <div class="container">
+    <span class="pill"><span class="dot"></span> New — Prompt Enhancement is live</span>
+    <h1>One hub. <span class="gradient-text">Every AI.</span></h1>
+    <p class="lead">OneHubAI brings information generator, image generation, voice studio, an interview coach, debate partner, study assistant and health AI — all under one premium workspace.</p>
+    <div class="d-flex justify-content-center gap-3 flex-wrap">
+      <a href="{{ url_for('auth.signup') }}" class="btn btn-neon btn-lg">Get started</a>
+      <a href="#features" class="btn btn-ghost btn-lg">Explore features</a>
+    </div>
+    <div class="mt-4 muted small">No credit card to search anywhere.</div>
+  </div>
+</section>
+
+<section id="features" class="section">
+  <div class="container">
+    <div class="text-center mb-5">
+      <h2 class="fw-bold">Everything you need, <span class="gradient-text">already wired in</span></h2>
+      <p class="muted">Built for makers, students, founders, recruiters, industrialist, professor and anyone who wants AI to feel like a real product.</p>
+    </div>
+    <div class="row g-4">
+      {% set feats = [
+        ('','AI Studio','Auto-enhance your prompt, then compare GPT, Claude, and Gemini side-by-side.'),
+        ('','AI Interview Coach','Standard, tough, or Shark Tank — voice-led practice with a graded scorecard.'),
+        ('','AI Debate Partner','Pick a topic, debate by voice for 4 minutes, get a full performance radar.'),
+        ('','Study Assistant','Drop a PDF, get summaries, exam notes, and 5–50 MCQs with explanations.'),
+        ('','Health Assistant','Interactive anatomy explorer and plain-English report analysis.'),
+        ('','Image Generator','Stability AI, Replicate, and OpenAI — same prompt, three engines.'),
+        ('','Voice Studio','Whisper transcription + ElevenLabs voices (male, female, narrator, motivational).'),
+        ('','Unified History','Every chat, image, debate, and report — one searchable timeline.'),
+      ] %}
+      {% for icon, title, body in feats %}
+      <div class="col-md-6 col-lg-3">
+        <div class="feature-card h-100">
+          <div class="ic">{{ icon }}</div>
+          <h5 class="fw-bold mb-1">{{ title }}</h5>
+          <p class="muted small mb-0">{{ body }}</p>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+
+<section id="pricing" class="section">
+  <div class="container">
+    <div class="text-center mb-5">
+      <h2 class="fw-bold">Simple, <span class="gradient-text">honest pricing</span></h2>
+      <p class="muted">No API keys needed. No setup. Just sign up and start using all AI tools instantly.</p>
+    </div>
+    <div class="row g-4 justify-content-center">
+      {% set tiers = [
+        {'name':'Starter','price':'₹0','unit':'Forever free','rows':['No API keys needed','All 8 AI modules unlocked','Study uploads & test generation','AI Interview & Debate access']},
+        {'name':'Pro','price':'₹249','unit':'/mo','rows':['Unlimited study uploads','Unlimited interviews & debates','Unlimited image generation','Priority AI responses','Advanced performance reports']},
+        {'name':'Enterprise','price':'Custom','unit':'','rows':['SSO + audit logs','SOC2-ready logging','Dedicated success engineer']}
+      ] %}
+      {% for t in tiers %}
+      <div class="col-md-4">
+        <div class="feature-card h-100 {% if loop.index==2 %}glass-strong{% endif %}">
+          <small class="muted text-uppercase">{{ t.name }}</small>
+          <div class="mt-2 d-flex align-items-end gap-1">
+            <span class="display-5 fw-bold">{{ t.price }}</span><span class="muted">{{ t.unit }}</span>
+          </div>
+          <hr class="divider">
+          <ul class="list-unstyled small mb-0">
+            {% for r in t.rows %}<li class="mb-2">✓ {{ r }}</li>{% endfor %}
+          </ul>
+          <a href="{{ url_for('auth.signup') }}" class="btn btn-{% if loop.index==2 %}neon{% else %}ghost{% endif %} w-100 mt-4">Choose {{ t.name }}</a>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+
+<section class="section">
+  <div class="container">
+    <div class="text-center mb-5">
+      <h2 class="fw-bold">Loved by <span class="gradient-text">users</span></h2>
+    </div>
+    <div class="row g-4">
+      {% set quotes = [
+        ('I uploaded my entire semester notes and got a full summary with exam tips in under a minute. This is exactly what students need.','Priya S.','B.Tech CSE Student'),
+        ('The AI mock interview gave me honest feedback on my answers. I felt much more confident in my actual interview after practising here.','Arjun M.','Software Engineer'),
+        ('The debate feature is genuinely impressive. It argued back intelligently and pushed me to think deeper. Great for competitive exam prep.','Neha R.','UPSC Aspirant'),
+      ] %}
+      {% for q, who, role in quotes %}
+      <div class="col-md-4">
+        <div class="feature-card h-100">
+          <p class="mb-3">“{{ q }}”</p>
+          <div class="d-flex align-items-center gap-2">
+            <span class="avatar">{{ who[0] }}</span>
+            <div><strong>{{ who }}</strong><br><small class="muted">{{ role }}</small></div>
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+
+<section id="faq" class="section">
+  <div class="container" style="max-width: 760px">
+    <div class="text-center mb-5"><h2 class="fw-bold">Frequently Asked Questions</h2></div>
+    <div class="accordion accordion-flush" id="faqAccordion">
+      {% set qs = [
+        ('What is OneHubAI?', 'OneHubAI is an all-in-one AI-powered platform that helps students and professionals study smarter, prepare for interviews, practice debates, generate images, and get health guidance — all in one place without switching between multiple tools.'),
+        ('Is OneHubAI free to use?', 'Yes, OneHubAI is free to get started. You can access all core features including Study Assistant, AI Interview, Debate, and more after creating a free account.'),
+        ('Do I need to install anything?', 'No. OneHubAI runs entirely in your browser. Just sign up and start using it instantly — no downloads or installations required.'),
+        ('Which AI models are supported?', 'GPT-4o, Claude 3.5 Sonnet, Gemini 1.5 Flash, FLUX (Replicate), Stable Diffusion (Stability), Whisper, and 5 ElevenLabs voices.'),
+        ('What file types can I upload for studying?', 'You can upload PDF, Word (.docx), PowerPoint (.pptx), and text files. OneHubAI will read and analyse the content automatically.'),
+        ('What does the Study Assistant generate from my file?', 'It generates a full summary, key points, examples, formulas, real-world applications, exam tips, common mistakes to avoid, quick revision notes, and comprehensive long notes — all from your uploaded file.'),
+        ('Can I take a test on my own study material?', 'Yes. After uploading any file you can generate MCQ, True/False, Fill in the Blanks, Short Answer, or Essay questions — in any quantity from 5 to 50 — all based on your actual content.'),
+        ('What kind of interviews does OneHubAI support?', 'It supports technical, HR, behavioural, and domain-specific interviews across fields like software engineering, marketing, finance, medicine, and more. You can also upload your CV to get questions tailored to your experience.'),
+        ('How does the AI Debate feature work?', 'You choose a topic, the AI takes the opposing side, and you debate in real time using your voice. After the session you receive a scored performance report across 8 dimensions including logic, persuasion, fluency, and critical thinking.'),
+        ('Is the debate scoring honest?', 'Yes — the scoring is strict. If your arguments are weak, off-topic, or very short, you will receive a low score. Only well-structured arguments with evidence and rebuttals score above 70.'),
+        ('What kind of images can I generate?', 'You can generate any image by describing it in text — illustrations, concept art, diagrams, realistic scenes, logos, and more. All generated images can be downloaded directly.'),
+        ('Is the Health Assistant a replacement for a doctor?', 'No. The Health Assistant provides general health information and guidance only. It is not a substitute for professional medical advice. Always consult a qualified doctor for medical decisions.'),
+        ('Is my data private?', 'All your uploaded files, sessions, and chat history are private to your account only. We do not share your personal data or content with third parties.'),
+        ('Can I self-host OneHubAI?', 'Absolutely. Deploy to Render, Railway, Fly, or any VPS using the included <code>requirements.txt</code> and <code>gunicorn</code>.'),
+        ('Why is the microphone not working during debate or interview?', 'Make sure you have granted microphone permission to the browser. In Chrome go to Settings → Privacy &amp; Security → Site Settings → Microphone and allow access for OneHubAI.'),
+        ('Which browsers work best with OneHubAI?', 'OneHubAI works on all modern browsers. Chrome and Edge are recommended for the best experience, especially for voice features like AI Interview and Debate.'),
+        ('How do I delete my account or data?', 'You can request account deletion from the Settings page. All your data including uploaded files, sessions, and history will be permanently removed.')
+      ] %}
+      {% for q, a in qs %}
+      <div class="accordion-item glass mb-2" style="border-radius:14px; overflow:hidden;">
+        <h2 class="accordion-header">
+          <button class="accordion-button collapsed bg-transparent" data-bs-toggle="collapse" data-bs-target="#fq{{ loop.index }}">{{ q }}</button>
+        </h2>
+        <div id="fq{{ loop.index }}" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+          <div class="accordion-body muted">{{ a|safe }}</div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+
+<section id="contact" class="section">
+  <div class="container text-center">
+    <h2 class="fw-bold mb-3">Ready to <span class="gradient-text">unify your AI</span>?</h2>
+    <p class="muted mb-4">Sign up in 30 seconds. Cancel anything, anytime.</p>
+    <a href="{{ url_for('auth.signup') }}" class="btn btn-neon btn-lg">Create your free workspace →</a>
+  </div>
+</section>
+{% endblock %}

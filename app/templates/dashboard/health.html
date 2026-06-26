@@ -1,0 +1,413 @@
+{% extends "_base_app.html" %}
+{% set active_module = 'health' %}
+{% block title %}Health Assistant — OneHubAI{% endblock %}
+
+{% block content %}
+<div class="d-flex flex-wrap align-items-center justify-content-between mb-4">
+  <div>
+    <h2 class="fw-bold mb-1">Health <span class="gradient-text">Assistant</span></h2>
+    <p class="muted mb-0">Interactive anatomy explorer &amp; AI health analysis. <em>Not a medical diagnosis.</em></p>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════
+     STEP 1 — Patient Profile
+     ══════════════════════════════════ -->
+<div id="profileStep" class="glass p-4 mb-4">
+  <div class="d-flex align-items-center gap-3 mb-4">
+    <div class="step-health-badge">1</div>
+    <div>
+      <h5 class="fw-bold mb-0">Your Profile</h5>
+      <p class="muted small mb-0">Tell us about yourself to personalise the health explorer</p>
+    </div>
+  </div>
+  <div class="row g-3 mb-4">
+    <div class="col-sm-6 col-lg-3">
+      <label class="form-label fw-semibold">Age</label>
+      <input id="pAge" type="number" class="form-control form-control-lg" min="1" max="120" placeholder="e.g. 25" required>
+    </div>
+    <div class="col-sm-6 col-lg-3">
+      <label class="form-label fw-semibold">Gender</label>
+      <select id="pGender" class="form-select form-select-lg">
+        <option value="male">Male</option>
+        <option value="female">Female</option>
+        <option value="other">Other</option>
+      </select>
+    </div>
+    <div class="col-sm-6 col-lg-3">
+      <label class="form-label fw-semibold">Weight (kg)</label>
+      <input id="pWeight" type="number" class="form-control form-control-lg" min="0" max="300" step="0.1" placeholder="e.g. 70">
+    </div>
+    <div class="col-sm-6 col-lg-3">
+      <label class="form-label fw-semibold">Height (cm)</label>
+      <input id="pHeight" type="number" class="form-control form-control-lg" min="0" max="251" step="0.1" placeholder="e.g. 175">
+    </div>
+  </div>
+  <div id="bmiPreview" class="glass p-3 mb-4" style="display:none;">
+    <div class="row g-3 text-center">
+      <div class="col-4">
+        <div class="muted small">BMI</div>
+        <div class="fw-bold" id="bmiVal" style="font-size:1.4rem;color:#D4AF37;">—</div>
+      </div>
+      <div class="col-4">
+        <div class="muted small">Category</div>
+        <div class="fw-bold small" id="bmiCat">—</div>
+      </div>
+      <div class="col-4">
+        <div class="muted small">Ideal Weight</div>
+        <div class="fw-bold small" id="idealWeight">—</div>
+      </div>
+    </div>
+  </div>
+  <button type="button" class="btn btn-neon px-5 py-3" onclick="showBodyDiagram()">
+    Continue → Explore Anatomy
+  </button>
+</div>
+
+<!-- ══════════════════════════════════
+     STEP 2 — Anatomy Explorer
+     ══════════════════════════════════ -->
+<div id="bodyStep" class="d-none">
+  <button class="btn btn-ghost btn-sm mb-3" onclick="goBackToProfile()">← Edit Profile</button>
+
+  <div class="glass p-3 mb-4 d-flex flex-wrap gap-3 align-items-center">
+    <span class="chip neon" id="profileChip">Loading…</span>
+    <div class="muted small">Click any organ or body part to get detailed AI information below</div>
+  </div>
+
+  <!-- Internal Organs -->
+  <div class="glass p-4 mb-4">
+    <h5 class="fw-bold mb-3">Internal Organs</h5>
+    <div class="organ-grid" id="internalGrid">
+      {% set internal_organs = [
+        ('Brain','','brain'),
+        ('Heart','','heart'),
+        ('Lungs','','lungs'),
+        ('Liver','','liver'),
+        ('Kidneys','','kidneys'),
+        ('Stomach','','stomach'),
+        ('Pancreas','','pancreas'),
+        ('Gallbladder','','gallbladder'),
+        ('Small Intestine','','small-intestine'),
+        ('Large Intestine','','large-intestine'),
+        ('Spleen','','spleen'),
+        ('Appendix','','appendix'),
+        ('Bladder','','bladder'),
+        ('Thyroid','','thyroid'),
+        ('Adrenal Glands','','adrenal-glands'),
+        ('Pituitary Gland','','pituitary-gland'),
+        ('Thymus','','thymus'),
+        ('Prostate (Male)','','prostate'),
+        ('Ovaries (Female)','','ovaries'),
+        ('Uterus (Female)','','uterus'),
+        ('Spine','','spine'),
+        ('Trachea','','trachea'),
+        ('Esophagus','','esophagus'),
+        ('Aorta','','aorta'),
+      ] %}
+      {% for name, emoji, slug in internal_organs %}
+      <div class="organ-card glass" data-part="{{ name }}" onclick="loadPart('{{ name }}')">
+        <div class="organ-emoji">{{ emoji }}</div>
+        <div class="organ-name">{{ name }}</div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <!-- External / Body Parts -->
+  <div class="glass p-4 mb-4">
+    <h5 class="fw-bold mb-3">External Body Parts</h5>
+    <div class="organ-grid" id="externalGrid">
+      {% set external_parts = [
+        ('Head','','head'),
+        ('Eyes','','eyes'),
+        ('Ears','','ears'),
+        ('Nose','','nose'),
+        ('Mouth & Teeth','','mouth'),
+        ('Tongue','','tongue'),
+        ('Neck','','neck'),
+        ('Shoulders','','shoulders'),
+        ('Chest','','chest'),
+        ('Breasts','','breasts'),
+        ('Arms','','arms'),
+        ('Elbows','','elbows'),
+        ('Hands','','hands'),
+        ('Fingers','','fingers'),
+        ('Nails','','nails'),
+        ('Abdomen','','abdomen'),
+        ('Back','','back'),
+        ('Hips','','hips'),
+        ('Pelvis','','pelvis'),
+        ('Legs','','legs'),
+        ('Knees','','knees'),
+        ('Ankles','','ankles'),
+        ('Feet','','feet'),
+        ('Skin','','skin'),
+        ('Hair','','hair'),
+        ('Muscles','','muscles'),
+        ('Bones & Skeleton','','bones'),
+        ('Joints','','joints'),
+        ('Lymph Nodes','','lymph-nodes'),
+        ('Blood Vessels','','blood-vessels'),
+        ('Nerves','','nerves'),
+      ] %}
+      {% for name, emoji, slug in external_parts %}
+      <div class="organ-card glass" data-part="{{ name }}" onclick="loadPart('{{ name }}')">
+        <div class="organ-emoji">{{ emoji }}</div>
+        <div class="organ-name">{{ name }}</div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <!-- AI Info Panel -->
+  <div class="glass p-4 mb-4" id="partInfoPanel" style="display:none;">
+    <div class="d-flex align-items-center gap-3 mb-3">
+      <div class="step-health-badge" id="partEmoji" style="font-size:1.4rem;width:48px;height:48px;">🔍</div>
+      <div>
+        <h5 class="fw-bold mb-0" id="partTitle">Select an organ</h5>
+        <span class="muted small">AI-generated anatomical information</span>
+      </div>
+    </div>
+    <div id="partOut">
+      <p class="muted small">Click any organ or body part above to learn about it.</p>
+    </div>
+  </div>
+
+  <!-- ══ Symptom Analysis ══ -->
+  <div class="glass p-4 mb-4">
+    <div class="d-flex align-items-center gap-3 mb-3">
+      <div class="step-health-badge">2</div>
+      <div>
+        <h5 class="fw-bold mb-0">Symptom &amp; Report Analysis</h5>
+        <p class="muted small mb-0">Selected organ: <strong id="selectedPartLabel">None yet — click an organ above first</strong></p>
+      </div>
+    </div>
+
+    <div class="mb-3">
+      <label class="form-label">Describe your symptoms in detail</label>
+      <textarea id="symptomsInput" class="form-control auto-grow" rows="3"
+        placeholder="e.g. Sharp chest pain for 2 days, shortness of breath, dizziness, nausea…"></textarea>
+    </div>
+    <div class="mb-3">
+      <label class="form-label">Upload medical report (optional)</label>
+      <input id="reportFile" type="file" class="form-control" accept=".pdf,.jpg,.jpeg,.png,.docx,.txt">
+      <div class="muted small mt-1">Accepted: Medical reports, blood tests, prescriptions, X-rays, MRI, CT scans</div>
+    </div>
+
+    <button class="btn btn-neon w-100 py-3" type="button" onclick="submitHealthAnalysis()">
+      🔍 Generate AI Health Analysis
+    </button>
+
+    <div id="analysisOut" class="mt-3"></div>
+  </div>
+
+  <!-- Past Reports -->
+  <div class="glass p-4">
+    <h5 class="fw-bold mb-3">📋 Past Health Reports</h5>
+    {% if reports %}
+      {% for r in reports %}
+      <div class="list-row mb-2">
+        <div>
+          <strong>{{ r.symptoms[:60] or 'General checkup' }}</strong>
+          <div class="muted small">{{ r.gender|title }}, Age {{ r.age }} · {{ r.weight }}kg · {{ r.height }}cm · {{ r.created_at.strftime('%b %d, %Y') }}</div>
+        </div>
+        <span class="chip">{{ 'With Report' if r.uploaded_file else 'Symptoms only' }}</span>
+      </div>
+      {% endfor %}
+    {% else %}
+      <p class="muted small mb-0">Your past health analyses will appear here.</p>
+    {% endif %}
+  </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+let selectedPart = '';
+let selectedEmoji = '🔍';
+let patientData = {};
+
+function calcBMI() {
+  const w = parseFloat(document.getElementById('pWeight').value);
+  const h = parseFloat(document.getElementById('pHeight').value) / 100;
+  if (!w || !h) { document.getElementById('bmiPreview').style.display='none'; return; }
+  const bmi = (w / (h * h)).toFixed(1);
+  let cat = bmi < 18.5 ? 'Underweight' : bmi < 25 ? 'Normal ✅' : bmi < 30 ? 'Overweight' : 'Obese';
+  const ideal = (21.75 * h * h).toFixed(1);
+  document.getElementById('bmiVal').textContent = bmi;
+  document.getElementById('bmiCat').textContent = cat;
+  document.getElementById('idealWeight').textContent = ideal + ' kg';
+  document.getElementById('bmiPreview').style.display = 'block';
+}
+document.getElementById('pWeight').addEventListener('input', calcBMI);
+document.getElementById('pHeight').addEventListener('input', calcBMI);
+
+function showBodyDiagram() {
+  const age = document.getElementById('pAge').value;
+  const gender = document.getElementById('pGender').value;
+  const weight = document.getElementById('pWeight').value;
+  const height = document.getElementById('pHeight').value;
+  if (!age) { showToast('Please enter your age.','error'); return; }
+  patientData = { age, gender, weight, height };
+  document.getElementById('profileStep').classList.add('d-none');
+  document.getElementById('bodyStep').classList.remove('d-none');
+  const bmi = weight && height ? ` · BMI ${(weight/((height/100)**2)).toFixed(1)}` : '';
+  document.getElementById('profileChip').textContent =
+    `${gender==='male'?'♂':'♀'} ${gender} · Age ${age}${weight?' · '+weight+'kg':''}${height?' · '+height+'cm':''}${bmi}`;
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function goBackToProfile() {
+  document.getElementById('bodyStep').classList.add('d-none');
+  document.getElementById('profileStep').classList.remove('d-none');
+}
+
+async function loadPart(part) {
+  if (!part) return;
+  selectedPart = part;
+  document.getElementById('selectedPartLabel').textContent = part;
+
+  // Find emoji
+  const card = document.querySelector(`.organ-card[data-part="${part}"]`);
+  const emoji = card ? card.querySelector('.organ-emoji').textContent : '🔍';
+  selectedEmoji = emoji;
+
+  // Highlight selected
+  document.querySelectorAll('.organ-card').forEach(x => x.classList.remove('organ-active'));
+  if (card) card.classList.add('organ-active');
+
+  // Show panel
+  const panel = document.getElementById('partInfoPanel');
+  panel.style.display = 'block';
+  document.getElementById('partEmoji').textContent = emoji;
+  document.getElementById('partTitle').textContent = part;
+  document.getElementById('partOut').innerHTML =
+    '<div class="d-flex align-items-center gap-2 muted small"><span class="spinner"></span> Loading AI information…</div>';
+
+  // Scroll to panel
+  panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+  const gender = patientData.gender || 'male';
+  try {
+    const res = await postJson('{{ url_for("health.part") }}', { part, gender });
+    if (res.ok) {
+      document.getElementById('partOut').innerHTML = markdownLite(res.data);
+    } else {
+      document.getElementById('partOut').innerHTML =
+        `<div class="alert alert-warning">${res.error || 'Failed to load. Check your API key.'}</div>`;
+    }
+  } catch(e) {
+    document.getElementById('partOut').innerHTML =
+      `<div class="alert alert-danger">Network error: ${e.message}</div>`;
+  }
+}
+
+async function submitHealthAnalysis() {
+  const symptoms = document.getElementById('symptomsInput').value.trim();
+  const fileInput = document.getElementById('reportFile');
+
+  if (!symptoms && !fileInput.files.length) {
+    showToast('Please describe your symptoms or upload a report.','error');
+    return;
+  }
+
+  document.getElementById('analysisOut').innerHTML =
+    '<div class="bubble d-flex align-items-center gap-2 muted"><span class="spinner"></span> AI is analysing your health profile…</div>';
+
+  const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || '';
+  const fd = new FormData();
+  fd.append('csrf_token', csrfToken);
+  fd.append('body_part', selectedPart || 'General');
+  fd.append('age', patientData.age || '');
+  fd.append('gender', patientData.gender || 'other');
+  fd.append('weight', patientData.weight || '');
+  fd.append('height', patientData.height || '');
+  fd.append('symptoms', symptoms);
+  if (fileInput.files.length) fd.append('report', fileInput.files[0]);
+
+  try {
+    const res = await fetch('{{ url_for("health.analyze") }}', {
+      method: 'POST',
+      headers: { 'X-CSRFToken': csrfToken },
+      body: fd
+    });
+    const data = await res.json();
+
+    if (data.ok) {
+      document.getElementById('analysisOut').innerHTML = `
+        <div class="glass p-4">
+          <div class="d-flex align-items-center gap-2 mb-3">
+            <span style="font-size:1.5rem">🏥</span>
+            <h5 class="fw-bold mb-0">AI Health Analysis</h5>
+            <span class="chip neon ms-auto">Informational Only</span>
+          </div>
+          <div class="alert mb-3" style="border:1px solid rgba(212,175,55,0.4);background:rgba(212,175,55,0.06);">
+            ⚠️ <strong>Disclaimer:</strong> This is AI-generated informational content and is <strong>NOT</strong> a medical diagnosis. Always consult a qualified healthcare professional.
+          </div>
+          ${markdownLite(data.analysis)}
+        </div>`;
+      showToast('Analysis complete!','success');
+    } else {
+      document.getElementById('analysisOut').innerHTML =
+        `<div class="alert alert-danger">❌ ${data.error || 'Analysis failed. Please check your API key in .env file.'}</div>`;
+      showToast('Analysis failed','error');
+    }
+  } catch(e) {
+    document.getElementById('analysisOut').innerHTML =
+      `<div class="alert alert-danger">❌ Network error: ${e.message}</div>`;
+    showToast('Network error','error');
+  }
+}
+
+document.querySelectorAll('textarea.auto-grow').forEach(ta => {
+  ta.addEventListener('input', () => { ta.style.height='auto'; ta.style.height=ta.scrollHeight+'px'; });
+});
+</script>
+
+<style>
+.step-health-badge {
+  width: 36px; height: 36px; border-radius: 50%;
+  background: linear-gradient(135deg,#D4AF37,#FFD700);
+  color: #050505; font-size:1rem; font-weight:800;
+  display: inline-grid; place-items:center; flex-shrink:0;
+}
+.organ-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+  gap: 12px;
+}
+.organ-card {
+  cursor: pointer;
+  border: 2px solid rgba(212,175,55,0.15);
+  border-radius: 14px;
+  padding: 14px 8px;
+  text-align: center;
+  transition: all 0.2s;
+  user-select: none;
+}
+.organ-card:hover {
+  border-color: rgba(212,175,55,0.6);
+  transform: translateY(-3px);
+  box-shadow: 0 8px 24px rgba(212,175,55,0.2);
+}
+.organ-card.organ-active {
+  border-color: #D4AF37;
+  background: rgba(212,175,55,0.12);
+  box-shadow: 0 0 20px rgba(212,175,55,0.3);
+}
+.organ-emoji {
+  font-size: 1.8rem;
+  display: block;
+  margin-bottom: 6px;
+  line-height: 1;
+}
+.organ-name {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--text-1);
+  line-height: 1.3;
+}
+</style>
+{% endblock %}

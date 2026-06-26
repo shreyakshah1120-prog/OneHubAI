@@ -1,0 +1,402 @@
+{% extends "_base_app.html" %}
+{% set active_module = 'debate' %}
+{% block title %}Debate: {{ s.topic[:40] }} — OneHubAI{% endblock %}
+
+{% block head_extra %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+{% endblock %}
+
+{% block content %}
+<div class="d-flex flex-wrap align-items-center justify-content-between mb-3">
+  <div>
+    <h2 class="fw-bold mb-1 gradient-text">{{ s.topic }}</h2>
+    <p class="muted mb-0">Voice-based AI debate · deep debate · speak your arguments</p>
+  </div>
+  <div class="d-flex gap-2">
+    <a href="{{ url_for('debate.index') }}" class="btn btn-ghost">← Back</a>
+    <button id="analyzeBtn" class="btn btn-neon" onclick="doAnalyze()">Get Feedback</button>
+  </div>
+</div>
+
+<!-- Timer + status banner -->
+<div class="glass p-3 mb-4 d-flex flex-wrap gap-3 align-items-center justify-content-between">
+  <div class="d-flex align-items-center gap-3">
+    <div>
+      <div class="fw-bold" id="timerDisplay" style="font-size:1.4rem;color:#D4AF37;">minutes...</div>
+      <div class="muted small">Debate Timer</div>
+    </div>
+  </div>
+  <div id="debateStatusBanner" class="fw-semibold" style="font-size:.9rem;color:var(--text-1);">
+    AI is speaking the opening argument…
+  </div>
+  <button class="btn btn-ghost btn-sm" id="timerStartBtn" onclick="startTimer()" style="display:none;">▶ Start Timer</button>
+</div>
+
+<div class="row g-3">
+  <!-- ── Chat & Mic ── -->
+  <div class="col-lg-7">
+    <div class="glass p-4" style="display:flex;flex-direction:column;min-height:60vh;">
+
+      <!-- Transcript -->
+      <div id="transcript" class="scrollbox flex-grow-1 mb-3" style="overflow-y:auto;max-height:420px;">
+        {% for t in transcript %}
+        <div class="debate-bubble {% if t.role=='user' %}user{% endif %} mb-2">
+          <div class="d-flex align-items-center gap-2 mb-1">
+            <span class="muted" style="font-size:.72rem;">{{ ' You' if t.role=='user' else 'AI Opponent' }}</span>
+          </div>
+          <div>{{ t.text }}</div>
+        </div>
+        {% endfor %}
+        {% if not transcript %}
+        <div class="text-center muted py-5">
+          <div style="font-size:2.5rem">🎤</div>
+          <p class="mb-0">The debate is about to begin. AI will speak first!</p>
+        </div>
+        {% endif %}
+      </div>
+
+      <!-- Live transcript while speaking -->
+      <div id="liveTranscriptBox" class="muted small mb-2" style="min-height:22px;font-style:italic;padding:0 4px;"></div>
+
+      <!-- Mic area -->
+      <div class="d-flex flex-column align-items-center gap-3 pt-3" style="border-top:1px solid var(--border);">
+        <button id="mainMicBtn" class="main-mic-btn" onclick="toggleDebateMic()" title="Click to speak your argument">
+          <span class="mic-emoji">🎤</span>
+          <span class="mic-state-label">Click to Speak</span>
+        </button>
+        <div id="debateStatus" class="muted small text-center" style="min-height:20px;"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Scores / Radar ── -->
+  <div class="col-lg-5">
+    <div class="glass p-4" style="min-height:60vh;overflow-y:auto;">
+      <h6 class="fw-bold mb-3">Performance Score</h6>
+      {% if scores %}
+        <canvas id="radar" height="240"></canvas>
+        <div class="mt-3">
+          {% set score_items = [
+            ('Public Speaking', scores.public_speaking),
+            ('Confidence', scores.confidence),
+            ('Logic', scores.logical_reasoning),
+            ('Communication', scores.communication),
+            ('Persuasion', scores.persuasion),
+            ('Vocabulary', scores.vocabulary),
+            ('Critical Thinking', scores.critical_thinking),
+            ('Fluency', scores.fluency),
+          ] %}
+          {% for label, val in score_items %}
+          <div class="mb-2">
+            <div class="d-flex justify-content-between mb-1">
+              <span class="muted small">{{ label }}</span>
+              <span class="fw-bold small">{{ val }}/100</span>
+            </div>
+            <div class="stat-bar-mini">
+              <div class="stat-bar-fill" style="width:{{ val }}%"></div>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+        {% if s.suggestions %}
+        <div class="glass p-3 mt-3">
+          <h6 class="fw-bold mb-2">Improvement Tips</h6>
+          <p class="muted small mb-0" style="line-height:1.7;">{{ s.suggestions }}</p>
+        </div>
+        {% endif %}
+      {% else %}
+        <div class="text-center muted py-5">
+          <div style="font-size:2rem">📊</div>
+          <p class="small mb-3">Your debate room<br><strong>Get Feedback</strong> for your score.</p>
+          <div class="muted small text-start" style="line-height:1.9;">
+            <p class="mb-1">Public Speaking</p>
+            <p class="mb-1">Confidence</p>
+            <p class="mb-1">Logical Reasoning</p>
+            <p class="mb-1">Communication</p>
+            <p class="mb-1">Persuasion</p>
+            <p class="mb-1">Vocabulary</p>
+            <p class="mb-1">Critical Thinking</p>
+            <p class="mb-0">Fluency</p>
+          </div>
+        </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const transcriptEl = document.getElementById('transcript');
+const debateStatus = document.getElementById('debateStatus');
+const liveTranscriptBox = document.getElementById('liveTranscriptBox');
+const statusBanner = document.getElementById('debateStatusBanner');
+let isDebateRecording = false;
+let debateRecognition = null;
+let aiSpeaking = false;
+let timerInterval = null;
+let timerSeconds = 240; 
+let timerStarted = false;
+
+// ── Timer ──
+function startTimer() {
+  if (timerStarted) return;
+  timerStarted = true;
+  document.getElementById('timerStartBtn').style.display = 'none';
+  timerInterval = setInterval(() => {
+    timerSeconds--;
+    const m = Math.floor(timerSeconds / 60);
+    const s = timerSeconds % 60;
+    document.getElementById('timerDisplay').textContent = `${m}:${s.toString().padStart(2,'0')}`;
+    if (timerSeconds <= 60) document.getElementById('timerDisplay').style.color = '#e74c3c';
+    if (timerSeconds <= 0) {
+      clearInterval(timerInterval);
+      document.getElementById('timerDisplay').textContent = '0:00';
+      statusBanner.textContent = '⏰ Time is up! Click Get Feedback to see your score.';
+      showToast('4-minute debate complete! Get your feedback.', 'success');
+    }
+  }, 1000);
+}
+
+// ── Render bubble ──
+function pushBubble(role, text) {
+  const div = document.createElement('div');
+  div.className = 'debate-bubble mb-2' + (role==='user' ? ' user' : '');
+  div.innerHTML = `<div class="d-flex align-items-center gap-2 mb-1"><span class="muted" style="font-size:.72rem;">${role==='user'?'🧑 You':'🤖 AI Opponent'}</span></div><div>${escapeHtml(text)}</div>`;
+  transcriptEl.appendChild(div);
+  transcriptEl.scrollTop = transcriptEl.scrollHeight;
+}
+
+// ── Browser TTS fallback ──
+function speakBrowser(text) {
+  return new Promise(resolve => {
+    if (!text) { resolve(); return; }
+    const utt = new SpeechSynthesisUtterance(text);
+    utt.rate = 0.93; utt.pitch = 1;
+    utt.onend = resolve;
+    utt.onerror = resolve;
+    window.speechSynthesis.speak(utt);
+  });
+}
+
+async function speakAI(text) {
+  aiSpeaking = true;
+  statusBanner.textContent = '🔊 AI Opponent is speaking…';
+  debateStatus.textContent = '🔊 AI speaking — wait for your turn';
+  try {
+    const ttsRes = await postJson('{{ url_for("debate.speak", sid=s.id) }}', { text });
+    if (ttsRes.ok && ttsRes.url) {
+      await new Promise((resolve, reject) => {
+        const audio = new Audio(ttsRes.url);
+        window.currentAudio = audio;
+        audio.onended = () => { window.currentAudio = null; resolve(); };
+        audio.onerror = () => { window.currentAudio = null; reject(); };
+        audio.play().catch(reject);
+      });
+    } else {
+      await speakBrowser(text);
+    }
+  } catch {
+    await speakBrowser(text);
+  }
+  aiSpeaking = false;
+  statusBanner.textContent = '🎤 Your turn — press the mic to argue back!';
+  debateStatus.textContent = 'Your turn — press 🎤 to speak';
+}
+
+async function sendTurn(text) {
+  statusBanner.textContent = '🤖 AI is formulating a counter-argument…';
+  debateStatus.textContent = '⏳ AI thinking…';
+  const res = await postJson('{{ url_for("debate.turn", sid=s.id) }}', { text });
+  if (res.ok) {
+    pushBubble('ai', res.ai_text);
+    await speakAI(res.ai_text);
+  } else {
+    debateStatus.textContent = '⚠️ ' + (res.error || 'Error');
+    statusBanner.textContent = '⚠️ AI could not respond. Try again.';
+  }
+}
+
+// ── Mic toggle ──
+const Rec = window.SpeechRecognition || window.webkitSpeechRecognition;
+const mainMicBtn = document.getElementById('mainMicBtn');
+
+function toggleDebateMic() {
+  if (!Rec) { showToast('Speech recognition requires Chrome or Edge.', 'error'); return; }
+  if (aiSpeaking) { showToast('Please wait for AI to finish speaking.', 'error'); return; }
+
+  if (isDebateRecording) {
+    debateRecognition.stop();
+    return;
+  }
+
+  debateRecognition = new Rec();
+  debateRecognition.lang = 'en-US';
+  debateRecognition.interimResults = true;
+  debateRecognition.continuous = true;
+
+  debateRecognition.onstart = () => {
+    isDebateRecording = true;
+    if (!timerStarted) startTimer();
+    mainMicBtn.classList.add('recording');
+    mainMicBtn.querySelector('.mic-state-label').textContent = 'Recording… Click to Stop';
+    statusBanner.textContent = '🔴 Recording your argument…';
+    debateStatus.textContent = '🔴 Listening — speak your argument';
+    liveTranscriptBox.textContent = '';
+  };
+
+  let finalText = '';
+  debateRecognition.onresult = e => {
+    let interim = '', fin = '';
+    for (let i = e.resultIndex; i < e.results.length; i++) {
+      if (e.results[i].isFinal) fin += e.results[i][0].transcript;
+      else interim += e.results[i][0].transcript;
+    }
+    finalText += fin;
+    liveTranscriptBox.textContent = (finalText + interim).trim();
+  };
+
+  debateRecognition.onend = () => {
+    isDebateRecording = false;
+    mainMicBtn.classList.remove('recording');
+    mainMicBtn.querySelector('.mic-state-label').textContent = 'Click to Speak';
+    liveTranscriptBox.textContent = '';
+    if (finalText.trim()) {
+      pushBubble('user', finalText.trim());
+      sendTurn(finalText.trim());
+      finalText = '';
+    } else {
+      debateStatus.textContent = 'No speech detected. Try again.';
+      statusBanner.textContent = '🎤 Your turn — press the mic to argue!';
+    }
+  };
+
+  debateRecognition.onerror = e => {
+    isDebateRecording = false;
+    mainMicBtn.classList.remove('recording');
+    mainMicBtn.querySelector('.mic-state-label').textContent = 'Click to Speak';
+    const msgs = {'not-allowed':'Microphone access denied.','no-speech':'No speech detected.'};
+    showToast(msgs[e.error]||'Mic error: '+e.error, 'error');
+    statusBanner.textContent = '🎤 Your turn — press the mic to argue!';
+    debateStatus.textContent = '';
+  };
+
+  try { debateRecognition.start(); }
+  catch(e) { showToast('Cannot start mic: '+e.message, 'error'); }
+}
+
+// ── Analyze ──
+async function doAnalyze() {
+  document.getElementById('analyzeBtn').innerHTML = '<span class="spinner"></span> Scoring…';
+  document.getElementById('analyzeBtn').disabled = true;
+  const res = await postJson('{{ url_for("debate.analyze", sid=s.id) }}', {});
+  document.getElementById('analyzeBtn').innerHTML = '📊 Get Feedback';
+  document.getElementById('analyzeBtn').disabled = false;
+  if (res.ok) {
+    window.speechSynthesis.cancel();
+    if (window.currentAudio) {
+      window.currentAudio.pause();
+      window.currentAudio.src = '';
+      window.currentAudio = null;
+    }
+    aiSpeaking = false;
+    sessionStorage.setItem('debateJustScored', '1');
+    location.reload();
+  } else {
+    showToast('Scoring failed.', 'error');
+  }
+}
+
+// ── Radar chart ──
+{% if scores %}
+new Chart(document.getElementById('radar'), {
+  type: 'radar',
+  data: {
+    labels: ['Speaking','Confidence','Logic','Communication','Persuasion','Vocabulary','Critical','Fluency'],
+    datasets: [{
+      label: 'Your Score',
+      data: [
+        {{ scores.public_speaking }}, {{ scores.confidence }},
+        {{ scores.logical_reasoning }}, {{ scores.communication }},
+        {{ scores.persuasion }}, {{ scores.vocabulary }},
+        {{ scores.critical_thinking }}, {{ scores.fluency }}
+      ],
+      backgroundColor: 'rgba(212,175,55,0.2)',
+      borderColor: '#D4AF37', borderWidth: 2,
+      pointBackgroundColor: '#FFD700'
+    }]
+  },
+  options: {
+    scales: {
+      r: {
+        beginAtZero: true, max: 100,
+        ticks: { color: '#888', stepSize: 20 },
+        grid: { color: 'rgba(255,255,255,0.08)' },
+        pointLabels: { color: '#C8C8C8', font: { size: 11 } }
+      }
+    },
+    plugins: { legend: { display: false } }
+  }
+});
+{% endif %}
+
+// ── Auto-play opening AI message ──
+window.addEventListener('load', async () => {
+  const justScored = sessionStorage.getItem('debateJustScored');
+  sessionStorage.removeItem('debateJustScored');
+  if (justScored === '1') {
+    statusBanner.textContent = 'Feedback ready — review your scores below.';
+    debateStatus.textContent = '';
+    return;
+  }
+  {% if scores %}
+  statusBanner.textContent = 'Debate complete — your scores.';
+  debateStatus.textContent = '';
+  return;
+  {% elif transcript and transcript|length > 0 and transcript[0].role == 'ai' %}
+  await speakAI({{ transcript[0].text | tojson }});
+  {% else %}
+  statusBanner.textContent = 'Your turn — press the mic to start debating!';
+  debateStatus.textContent = 'Press to begin';
+  {% endif %}
+});
+</script>
+
+<style>
+.main-mic-btn {
+  width: 120px; height: 120px; border-radius: 50%;
+  background: rgba(212,175,55,0.12);
+  border: 3px solid rgba(212,175,55,0.4);
+  cursor: pointer;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center; gap: 6px;
+  transition: all 0.2s;
+}
+.main-mic-btn:hover {
+  background: rgba(212,175,55,0.22); border-color: #D4AF37;
+  transform: scale(1.06); box-shadow: 0 0 30px rgba(212,175,55,0.3);
+}
+.main-mic-btn.recording {
+  background: rgba(255,50,50,0.15); border-color: #ff3232;
+  animation: debate-pulse 1.2s ease infinite;
+}
+.mic-emoji { font-size: 2.4rem; }
+.mic-state-label { font-size: 0.65rem; font-weight: 700; color: var(--text-2); text-align: center; max-width: 90px; }
+.main-mic-btn.recording .mic-state-label { color: #ff5050; }
+@keyframes debate-pulse { 0%,100%{box-shadow:0 0 0 0 rgba(255,50,50,0.5)} 50%{box-shadow:0 0 0 20px rgba(255,50,50,0)} }
+.debate-bubble {
+  background: rgba(255,255,255,0.04);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 12px 16px;
+  line-height: 1.65;
+}
+.debate-bubble.user {
+  background: rgba(212,175,55,0.08);
+  border-color: rgba(212,175,55,0.3);
+  margin-left: 20px;
+}
+.stat-bar-mini { height:5px; border-radius:999px; background:rgba(255,255,255,0.08); overflow:hidden; }
+.stat-bar-fill { height:100%; border-radius:999px; background:linear-gradient(90deg,#D4AF37,#FFD700); }
+</style>
+{% endblock %}

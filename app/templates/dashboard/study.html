@@ -1,0 +1,257 @@
+{% extends "_base_app.html" %}
+{% set active_module = 'study' %}
+{% block title %}Study Assistant — OneHubAI{% endblock %}
+
+{% block content %}
+<div class="d-flex flex-wrap align-items-center justify-content-between mb-4">
+  <div>
+    <h2 class="fw-bold mb-1">Study <span class="gradient-text">Assistant</span></h2>
+    <p class="muted mb-0">Upload files or enter a topic — get AI summaries, notes, and practice tests.</p>
+  </div>
+</div>
+
+<!-- Upload Card -->
+<div class="glass p-4 mb-4">
+  <h5 class="fw-bold mb-3">Upload your Study Material</h5>
+
+  <!-- CSRF token accessible to JS -->
+  <input type="hidden" id="csrf_token" value="{{ csrf_token() }}">
+
+  <!-- Optional topic field -->
+  <div class="mb-3">
+    <label class="form-label fw-semibold">Topic / Subject <span class="muted small">(optional if uploading files)</span></label>
+    <input type="text" id="topicInput" class="form-control"
+      placeholder="e.g. Photosynthesis, World War 2, Python Functions…">
+  </div>
+
+  <!-- Drop Zone -->
+  <div class="drop-zone mb-3" id="dropZone">
+    <div class="dz-icon">📂</div>
+    <div class="dz-text">Drag &amp; drop files here, or <span class="dz-browse" onclick="document.getElementById('fileInput').click()">browse</span></div>
+    <div class="muted small mt-1">PDF, DOCX, PPT, TXT, Markdown · Multiple files allowed · Max 64 MB each</div>
+    <input type="file" id="fileInput" name="docs" accept=".pdf,.docx,.pptx,.ppt,.txt,.md" multiple hidden>
+  </div>
+
+  <!-- File List -->
+  <div id="fileList" class="mb-3"></div>
+  <!-- Error display -->
+  <div id="uploadError" class="alert alert-danger mb-3" style="display:none;"></div>
+
+  <!-- Loading state -->
+  <div id="uploadLoading" style="display:none;" class="mb-3">
+    <div class="d-flex align-items-center gap-3 muted">
+      <span class="spinner"></span>
+      <span id="uploadLoadingMsg">Uploading and analyzing your documents… may take 30-60 seconds</span>
+    </div>
+    <div class="progress-track mt-2"><div class="progress-fill" id="uploadProgressFill" style="width:0%"></div></div>
+  </div>
+
+  <button type="button" class="btn btn-neon w-100 py-3" id="uploadBtn" onclick="uploadStudy()" disabled>
+    🚀 Analyze Documents
+  </button>
+</div>
+
+<!-- Library -->
+<div class="glass p-4">
+  <h5 class="fw-bold mb-3"> Your Study Library</h5>
+  {% if materials %}
+    <div class="row g-2">
+    {% for m in materials %}
+    <div class="col-md-6">
+      <a class="list-row text-decoration-none" href="{{ url_for('study.show', mid=m.id) }}">
+        <div>
+          <strong>{{ m.filename }}</strong>
+          <div class="muted small">{{ m.created_at.strftime('%b %d, %Y at %H:%M') }}</div>
+        </div>
+        <span class="chip">Open →</span>
+      </a>
+    </div>
+    {% endfor %}
+    </div>
+  {% else %}
+    <div class="text-center muted py-4">
+      <div style="font-size:2.5rem">📖</div>
+      <p class="mb-0">Upload a DOCUMENT or enter a TOPIC to build your study library.</p>
+    </div>
+  {% endif %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const dropZone  = document.getElementById('dropZone');
+const fileInput = document.getElementById('fileInput');
+const fileList  = document.getElementById('fileList');
+const uploadBtn = document.getElementById('uploadBtn');
+let selectedFiles = [];
+let studyMode = 'summary';
+
+// ── Drop zone events ──
+dropZone.addEventListener('dragover',  e => { e.preventDefault(); dropZone.classList.add('dz-hover'); });
+dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dz-hover'));
+dropZone.addEventListener('drop', e => {
+  e.preventDefault(); dropZone.classList.remove('dz-hover');
+  addFiles([...e.dataTransfer.files]);
+});
+fileInput.addEventListener('change', () => { addFiles([...fileInput.files]); fileInput.value = ''; });
+
+// ── Also enable button if topic is typed ──
+document.getElementById('topicInput').addEventListener('input', updateBtn);
+
+function updateBtn() {
+  const hasTopic = document.getElementById('topicInput').value.trim().length > 0;
+  const hasFiles = selectedFiles.length > 0;
+  uploadBtn.disabled = !(hasTopic || hasFiles);
+}
+
+function addFiles(files) {
+  const allowed = ['.pdf','.docx','.pptx','.ppt','.txt','.md'];
+  files.forEach(f => {
+    const ext = '.' + f.name.split('.').pop().toLowerCase();
+    if (!allowed.includes(ext)) {
+      showToast(`Skipped unsupported file: ${f.name}`, 'error');
+      return;
+    }
+    if (!selectedFiles.find(x => x.name === f.name)) selectedFiles.push(f);
+  });
+  renderFileList();
+  updateBtn();
+}
+
+function removeFile(name) {
+  selectedFiles = selectedFiles.filter(f => f.name !== name);
+  renderFileList();
+  updateBtn();
+}
+
+function renderFileList() {
+  if (selectedFiles.length === 0) { fileList.innerHTML = ''; return; }
+  fileList.innerHTML = selectedFiles.map(f => `
+    <div class="file-chip">
+      <span>${getIcon(f.name)} ${escHtml(f.name)}</span>
+      <span class="file-chip-size">${formatSize(f.size)}</span>
+      <button type="button" class="file-chip-remove" onclick="removeFile('${escHtml(f.name).replace(/'/g,"\\'")}')">✕</button>
+    </div>`).join('');
+}
+
+function getIcon(name) {
+  const ext = name.split('.').pop().toLowerCase();
+  return {pdf:'📄',docx:'📝',pptx:'📊',ppt:'📊',txt:'📃',md:'📋'}[ext] || '📁';
+}
+function formatSize(b) { return b>1e6 ? (b/1e6).toFixed(1)+'MB' : (b/1024).toFixed(0)+'KB'; }
+function escHtml(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+function setMode(el, mode) {
+  document.querySelectorAll('.mode-select-card').forEach(c => c.classList.remove('selected-mode'));
+  el.classList.add('selected-mode');
+  studyMode = mode;
+}
+
+// ── Main upload function ──
+async function uploadStudy() {
+  const topic = document.getElementById('topicInput').value.trim();
+  const errorEl = document.getElementById('uploadError');
+  errorEl.style.display = 'none';
+
+  if (!topic && selectedFiles.length === 0) {
+    errorEl.textContent = 'Please enter a topic or upload at least one file.';
+    errorEl.style.display = 'block';
+    return;
+  }
+
+  // Build FormData properly
+  const formData = new FormData();
+
+  // Add CSRF token
+  const csrf = document.getElementById('csrf_token').value;
+  formData.append('csrf_token', csrf);
+
+  // Add topic if provided
+  if (topic) formData.append('topic', topic);
+
+  // Add mode
+  formData.append('mode', studyMode);
+
+  // Add each file individually
+  selectedFiles.forEach(file => formData.append('docs', file));
+
+  // UI: loading state
+  uploadBtn.disabled = true;
+  uploadBtn.innerHTML = '<span class="spinner"></span> Analyzing…';
+  document.getElementById('uploadLoading').style.display = 'block';
+
+  // Fake progress bar
+  const fill = document.getElementById('uploadProgressFill');
+  let pct = 0;
+  const progressTimer = setInterval(() => {
+    pct = Math.min(pct + Math.random() * 4, 88);
+    fill.style.width = pct + '%';
+  }, 400);
+
+  try {
+    const response = await fetch('{{ url_for("study.upload") }}', {
+      method: 'POST',
+      body: formData,
+      credentials: 'same-origin',
+      // DO NOT set Content-Type header — browser sets it automatically with boundary for multipart
+    });
+
+    clearInterval(progressTimer);
+    fill.style.width = '100%';
+
+    let data;
+    try {
+      data = await response.json();
+    } catch (e) {
+      throw new Error('Server returned an unexpected response. Check your API keys.');
+    }
+
+    if (!response.ok || !data.ok) {
+      throw new Error(data.error || `Server error ${response.status}`);
+    }
+
+    // Success — navigate to study detail page
+    showToast('Analysis complete! Redirecting…', 'success');
+    setTimeout(() => { window.location.href = data.redirect; }, 400);
+
+  } catch (err) {
+    clearInterval(progressTimer);
+    document.getElementById('uploadLoading').style.display = 'none';
+    fill.style.width = '0%';
+    uploadBtn.disabled = false;
+    uploadBtn.innerHTML = '🚀 Analyze Documents';
+    errorEl.textContent = 'Error: ' + err.message;
+    errorEl.style.display = 'block';
+  }
+}
+</script>
+
+<style>
+.drop-zone {
+  border: 2px dashed var(--border);
+  border-radius: 14px;
+  padding: 2rem 1rem;
+  text-align: center;
+  cursor: pointer;
+  transition: all .2s;
+  background: var(--glass-bg);
+}
+.drop-zone.dz-hover, .drop-zone:hover { border-color: var(--neon-1); box-shadow: 0 0 24px rgba(124,92,255,.2); }
+.dz-icon { font-size: 2.4rem; margin-bottom: .4rem; }
+.dz-text { font-weight: 500; }
+.dz-browse { color: var(--neon-1); cursor: pointer; text-decoration: underline; }
+.file-chip {
+  display: inline-flex; align-items: center; gap: .5rem;
+  background: var(--bg-2); border: 1px solid var(--border);
+  border-radius: 8px; padding: .35rem .7rem; margin: .25rem;
+  font-size: .85rem;
+}
+.file-chip-size { color: var(--text-2); font-size: .78rem; }
+.file-chip-remove { background: none; border: none; color: var(--text-2); cursor: pointer; padding: 0; font-size: .85rem; }
+.file-chip-remove:hover { color: #ff5f5f; }
+.mode-select-card { cursor:pointer; border:2px solid transparent; transition:all .2s; }
+.mode-select-card.selected-mode { border-color:var(--neon-1); box-shadow:0 0 20px rgba(124,92,255,.3); }
+.progress-track { height:3px; border-radius:999px; background:rgba(212,175,55,0.15); overflow:hidden; }
+.progress-fill { height:100%; border-radius:999px; background:linear-gradient(90deg,#D4AF37,#FFD700); transition:width 0.3s ease; width:0%; }
+</style>
+{% endblock %}
