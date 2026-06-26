@@ -23,7 +23,7 @@
       </div>
       <div class="mb-4">
         <label class="form-label">Password</label>
-        <input class="form-control" type="password" name="password" placeholder="••••••••" required>
+        <input class="form-control" type="password" name="password" placeholder="Enter your password" required minlength="6">
       </div>
       <button class="btn btn-neon w-100 py-2 mb-3">Log in →</button>
       <p class="text-center muted mb-0">New user? <a href="{{ url_for('auth.signup') }}" class="gradient-text fw-bold text-decoration-none">Create an account</a></p>
