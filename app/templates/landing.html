@@ -109,7 +109,6 @@
         ('What is OneHubAI?', 'OneHubAI is an all-in-one AI-powered platform that helps students and professionals study smarter, prepare for interviews, practice debates, generate images, and get health guidance — all in one place without switching between multiple tools.'),
         ('Is OneHubAI free to use?', 'Yes, OneHubAI is free to get started. You can access all core features including Study Assistant, AI Interview, Debate, and more after creating a free account.'),
         ('Do I need to install anything?', 'No. OneHubAI runs entirely in your browser. Just sign up and start using it instantly — no downloads or installations required.'),
-        ('Which AI models are supported?', 'GPT-4o, Claude 3.5 Sonnet, Gemini 1.5 Flash, FLUX (Replicate), Stable Diffusion (Stability), Whisper, and 5 ElevenLabs voices.'),
         ('What file types can I upload for studying?', 'You can upload PDF, Word (.docx), PowerPoint (.pptx), and text files. OneHubAI will read and analyse the content automatically.'),
         ('What does the Study Assistant generate from my file?', 'It generates a full summary, key points, examples, formulas, real-world applications, exam tips, common mistakes to avoid, quick revision notes, and comprehensive long notes — all from your uploaded file.'),
         ('Can I take a test on my own study material?', 'Yes. After uploading any file you can generate MCQ, True/False, Fill in the Blanks, Short Answer, or Essay questions — in any quantity from 5 to 50 — all based on your actual content.'),
@@ -118,11 +117,7 @@
         ('Is the debate scoring honest?', 'Yes — the scoring is strict. If your arguments are weak, off-topic, or very short, you will receive a low score. Only well-structured arguments with evidence and rebuttals score above 70.'),
         ('What kind of images can I generate?', 'You can generate any image by describing it in text — illustrations, concept art, diagrams, realistic scenes, logos, and more. All generated images can be downloaded directly.'),
         ('Is the Health Assistant a replacement for a doctor?', 'No. The Health Assistant provides general health information and guidance only. It is not a substitute for professional medical advice. Always consult a qualified doctor for medical decisions.'),
-        ('Is my data private?', 'All your uploaded files, sessions, and chat history are private to your account only. We do not share your personal data or content with third parties.'),
-        ('Can I self-host OneHubAI?', 'Absolutely. Deploy to Render, Railway, Fly, or any VPS using the included <code>requirements.txt</code> and <code>gunicorn</code>.'),
-        ('Why is the microphone not working during debate or interview?', 'Make sure you have granted microphone permission to the browser. In Chrome go to Settings → Privacy &amp; Security → Site Settings → Microphone and allow access for OneHubAI.'),
-        ('Which browsers work best with OneHubAI?', 'OneHubAI works on all modern browsers. Chrome and Edge are recommended for the best experience, especially for voice features like AI Interview and Debate.'),
-        ('How do I delete my account or data?', 'You can request account deletion from the Settings page. All your data including uploaded files, sessions, and history will be permanently removed.')
+        ('Why is the microphone not working during debate or interview?', 'Make sure you have granted microphone permission to the browser. In Chrome go to Settings → Privacy &amp; Security → Site Settings → Microphone and allow access for OneHubAI.')
       ] %}
       {% for q, a in qs %}
       <div class="accordion-item glass mb-2" style="border-radius:14px; overflow:hidden;">
@@ -141,7 +136,6 @@
 <section id="contact" class="section">
   <div class="container text-center">
     <h2 class="fw-bold mb-3">Ready to <span class="gradient-text">unify your AI</span>?</h2>
-    <p class="muted mb-4">Sign up in 30 seconds. Cancel anything, anytime.</p>
     <a href="{{ url_for('auth.signup') }}" class="btn btn-neon btn-lg">Create your free workspace →</a>
   </div>
 </section>
