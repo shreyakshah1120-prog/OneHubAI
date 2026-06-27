@@ -86,14 +86,14 @@
 
     <div class="sidebar-section">Workspace</div>
     {% set m = active_module|default('home') %}
-    <a class="sidebar-link {% if m=='home' %}active{% endif %}" href="{{ url_for('dashboard.home') }}">🏠 <span>Dashboard</span></a>
+    <a class="sidebar-link {% if m=='home' %}active{% endif %}" href="{{ url_for('dashboard.home') }}">🏠 <span>Home</span></a>
 
     <div class="sidebar-section">AI Tools</div>
-    <a class="sidebar-link {% if m=='studio' %}active{% endif %}" href="{{ url_for('ai_studio.index') }}">🎯 <span>AI Studio</span></a>
-    <a class="sidebar-link {% if m=='interview' %}active{% endif %}" href="{{ url_for('interview.index') }}">🎤 <span>AI Interview</span></a>
-    <a class="sidebar-link {% if m=='debate' %}active{% endif %}" href="{{ url_for('debate.index') }}">🧠 <span>AI Debate</span></a>
-    <a class="sidebar-link {% if m=='study' %}active{% endif %}" href="{{ url_for('study.index') }}">📚 <span>Study Assistant</span></a>
-    <a class="sidebar-link {% if m=='health' %}active{% endif %}" href="{{ url_for('health.index') }}">🏥 <span>Health Assistant</span></a>
+    <a class="sidebar-link {% if m=='studio' %}active{% endif %}" href="{{ url_for('ai_studio.index') }}">🎯 <span> Create Mode</span></a>
+    <a class="sidebar-link {% if m=='interview' %}active{% endif %}" href="{{ url_for('interview.index') }}">🎤 <span> Interview Pro</span></a>
+    <a class="sidebar-link {% if m=='debate' %}active{% endif %}" href="{{ url_for('debate.index') }}">🧠 <span> Debate Arena</span></a>
+    <a class="sidebar-link {% if m=='study' %}active{% endif %}" href="{{ url_for('study.index') }}">📚 <span>Study Lab</span></a>
+    <a class="sidebar-link {% if m=='health' %}active{% endif %}" href="{{ url_for('health.index') }}">🏥 <span>Body Check</span></a>
 
 
     <div class="sidebar-section">Account</div>
