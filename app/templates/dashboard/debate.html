@@ -16,11 +16,11 @@
   <div class="row g-2 mb-3" id="topicCards">
     {% set preset_topics = [
       ('AI','Artificial Intelligence','AI will replace all creative jobs'),
-      ('🌍','Climate Change','Economic growth vs environmental protection'),
-      ('📚','Education','Online education vs traditional classroom'),
-      ('💼','Business','Remote work is better than office work'),
-      ('🏛️','Politics','Democracy is the best form of government'),
-      ('💊','Healthcare','Universal healthcare should be mandatory'),
+      ('◑','Climate Change','Economic growth vs environmental protection'),
+      ('☳','Education','Online education vs traditional classroom'),
+      ('⚙','Business','Remote work is better than office work'),
+      ('⌬','Politics','Democracy is the best form of government'),
+      ('✚','Healthcare','Universal healthcare should be mandatory'),
     ] %}
     {% for icon, cat, topic in preset_topics %}
     <div class="col-md-4 col-lg-2">
@@ -74,7 +74,7 @@ function selectTopic(el, topic) {
   el.classList.add('selected-mode');
   document.getElementById('selectedTopic').value = topic;
   document.getElementById('customTopic').value = '';
-  document.getElementById('selectedDisplay').textContent = '✅ Selected: ' + topic;
+  document.getElementById('selectedDisplay').textContent = '✔ Selected: ' + topic;
   document.getElementById('selectedDisplay').style.color = 'var(--neon-4)';
 }
 </script>

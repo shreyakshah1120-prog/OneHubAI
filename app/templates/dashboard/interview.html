@@ -119,7 +119,7 @@
         <div>
           <strong>{{ s.role }}</strong>
           <div class="muted small">
-            {% if s.interview_type=='standard' %}🎯{% elif s.interview_type=='tough' %}⚡{% else %}🦈{% endif %}
+            {% if s.interview_type=='standard' %}✦{% elif s.interview_type=='tough' %}⚡{% else %}🦈{% endif %}
             {{ s.interview_type|title }} · {{ s.created_at.strftime('%b %d, %Y') }}
           </div>
         </div>

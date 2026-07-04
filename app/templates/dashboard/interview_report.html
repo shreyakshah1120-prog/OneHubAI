@@ -5,7 +5,7 @@
 {% block content %}
 <div class="d-flex flex-wrap align-items-center justify-content-between mb-4">
   <div>
-    <h2 class="fw-bold mb-1">📊 Interview Report</h2>
+    <h2 class="fw-bold mb-1"> ▥ Interview Report</h2>
     <p class="muted mb-0">{{ s.role }} · {{ s.interview_type|title }} · {{ s.created_at.strftime('%b %d, %Y') }}</p>
   </div>
   <a href="{{ url_for('interview.index') }}" class="btn btn-ghost">← Back</a>
@@ -34,7 +34,7 @@
   {% endfor %}
   <div class="col-6 col-md-4 col-lg-2-4">
     <div class="glass p-3 text-center" style="border-color:rgba(212,175,55,0.5);">
-      <div style="font-size:1.5rem;">⭐</div>
+      <div style="font-size:1.5rem;">★</div>
       <div class="muted small mt-1">Overall</div>
       <div class="fw-bold mt-1" style="font-size:2rem;color:#D4AF37;">
         {{ rd.get('overall', 7) }}<span class="muted" style="font-size:.9rem;">/10</span>

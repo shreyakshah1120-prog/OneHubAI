@@ -32,7 +32,7 @@
       <!-- Voice style selector -->
       <div class="mb-3">
         <label class="form-label fw-semibold small">Choose Voice Style</label>
-        <div id="voiceNotice" class="muted small mb-2" style="display:none">⚠️ Loading voices… if voices don't appear, try clicking Generate first.</div>
+        <div id="voiceNotice" class="muted small mb-2" style="display:none">⚠ Loading voices… if voices don't appear, try clicking Generate first.</div>
         <div class="voice-style-grid">
           <div class="voice-btn active" data-v="professional" onclick="selectVoice(this)">
             <span class="voice-icon">👔</span>
@@ -96,7 +96,7 @@
 
       <!-- Download via server (gTTS) -->
       <div class="mt-3 border-top pt-3">
-        <p class="muted small mb-2">💾 Want to <strong>download</strong> the audio? Use server-side generation:</p>
+        <p class="muted small mb-2">✦ Want to <strong>download</strong> the audio? Use server-side generation:</p>
         <button class="btn btn-ghost w-100" onclick="generateServerTTS()">⬇ Generate &amp; Download MP3</button>
         <div id="serverTtsLoader" class="d-none mt-2 text-center muted small"><span class="spinner"></span> Generating audio…</div>
         <div id="serverTtsOut" class="mt-2"></div>
@@ -245,7 +245,7 @@ function generateTTS() {
 
   currentUtterance.onend = () => {
     isSpeaking = false;
-    document.getElementById('ttsStatus').textContent = '✅ Done!';
+    document.getElementById('ttsStatus').textContent = '✔ Done!';
     document.getElementById('ttsPauseBtn').classList.add('d-none');
     document.getElementById('ttsStopBtn').classList.add('d-none');
     document.getElementById('ttsBtn').textContent = '🔊 Generate Voice';
@@ -259,7 +259,7 @@ function generateTTS() {
     document.getElementById('ttsStopBtn').classList.add('d-none');
     document.getElementById('ttsBtn').textContent = '🔊 Generate Voice';
     document.getElementById('ttsOut').innerHTML =
-      `<div class="alert alert-warning">⚠️ Error: ${e.error}. Try a different voice or browser.</div>`;
+      `<div class="alert alert-warning">⚠ Error: ${e.error}. Try a different voice or browser.</div>`;
   };
 
   updateVoiceTag();

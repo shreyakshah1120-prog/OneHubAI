@@ -106,7 +106,7 @@
         {% endif %}
       {% else %}
         <div class="text-center muted py-5">
-          <div style="font-size:2rem">📊</div>
+          <div style="font-size:2rem">▥</div>
           <p class="small mb-3">Your debate room<br><strong>Get Feedback</strong> for your score.</p>
           <div class="muted small text-start" style="line-height:1.9;">
             <p class="mb-1">Public Speaking</p>
@@ -152,7 +152,7 @@ function startTimer() {
     if (timerSeconds <= 0) {
       clearInterval(timerInterval);
       document.getElementById('timerDisplay').textContent = '0:00';
-      statusBanner.textContent = '⏰ Time is up! Click Get Feedback to see your score.';
+      statusBanner.textContent = '◔ Time is up! Click Get Feedback to see your score.';
       showToast('4-minute debate complete! Get your feedback.', 'success');
     }
   }, 1000);
@@ -205,15 +205,15 @@ async function speakAI(text) {
 }
 
 async function sendTurn(text) {
-  statusBanner.textContent = '🤖 AI is formulating a counter-argument…';
+  statusBanner.textContent = '▼ AI is formulating a counter-argument…';
   debateStatus.textContent = '⏳ AI thinking…';
   const res = await postJson('{{ url_for("debate.turn", sid=s.id) }}', { text });
   if (res.ok) {
     pushBubble('ai', res.ai_text);
     await speakAI(res.ai_text);
   } else {
-    debateStatus.textContent = '⚠️ ' + (res.error || 'Error');
-    statusBanner.textContent = '⚠️ AI could not respond. Try again.';
+    debateStatus.textContent = '⚠  ' + (res.error || 'Error');
+    statusBanner.textContent = '⚠  AI could not respond. Try again.';
   }
 }
 
@@ -290,7 +290,7 @@ async function doAnalyze() {
   document.getElementById('analyzeBtn').innerHTML = '<span class="spinner"></span> Scoring…';
   document.getElementById('analyzeBtn').disabled = true;
   const res = await postJson('{{ url_for("debate.analyze", sid=s.id) }}', {});
-  document.getElementById('analyzeBtn').innerHTML = '📊 Get Feedback';
+  document.getElementById('analyzeBtn').innerHTML = '▥ Get Feedback';
   document.getElementById('analyzeBtn').disabled = false;
   if (res.ok) {
     window.speechSynthesis.cancel();

@@ -16,7 +16,7 @@
   <div class="row g-4 justify-content-center mb-2">
     <div class="col-md-5">
       <div class="mode-card glass p-4 text-center" onclick="showSummary()">
-        <div style="font-size:3rem">📚</div>
+        <div style="font-size:3rem">▤</div>
         <h4 class="fw-bold mt-2 mb-1">Study and score it</h4>
         <p class="muted small mb-3">Detailed study notes with examples, formulas, exam tips, revision and more.</p>
         <button class="btn btn-neon w-100">View Summary →</button>
@@ -31,7 +31,7 @@
   <div class="d-flex align-items-center gap-3 mb-4 flex-wrap">
     <button class="btn btn-ghost" onclick="backToChoose()">← Back</button>
     <h4 class="fw-bold mb-0">Professional Study Notes</h4>
-    <button class="btn btn-ghost ms-auto" onclick="showTestSetup()">📝 Take Test →</button>
+    <button class="btn btn-ghost ms-auto" onclick="showTestSetup()">Test Time ➔</button>
   </div>
 
   <!-- Tab nav for summary sections -->
@@ -190,27 +190,27 @@
     <h5 class="fw-bold mb-4">Step 1 — Choose Question Type</h5>
     <div class="qtype-grid">
       <div class="qtype-card active" data-type="mcq" onclick="selectQType(this)">
-        <div class="qtype-icon">🎯</div>
+        <div class="qtype-icon">⛛</div>
         <div class="qtype-label">MCQ</div>
         <div class="qtype-sub">Multiple Choice (A/B/C/D)</div>
       </div>
       <div class="qtype-card" data-type="truefalse" onclick="selectQType(this)">
-        <div class="qtype-icon">✅</div>
+        <div class="qtype-icon">⛛</div>
         <div class="qtype-label">True / False</div>
         <div class="qtype-sub">Decide correct statement</div>
       </div>
       <div class="qtype-card" data-type="fillblank" onclick="selectQType(this)">
-        <div class="qtype-icon">✏️</div>
+        <div class="qtype-icon">⛛</div>
         <div class="qtype-label">Fill in Blanks</div>
         <div class="qtype-sub">Complete the sentence</div>
       </div>
       <div class="qtype-card" data-type="short" onclick="selectQType(this)">
-        <div class="qtype-icon">📝</div>
+        <div class="qtype-icon">⛛</div>
         <div class="qtype-label">Short Answer</div>
         <div class="qtype-sub">2-4 sentence answers</div>
       </div>
       <div class="qtype-card" data-type="long" onclick="selectQType(this)">
-        <div class="qtype-icon">📄</div>
+        <div class="qtype-icon">⛛</div>
         <div class="qtype-label">Long Answer</div>
         <div class="qtype-sub">Essay / detailed response</div>
       </div>
@@ -252,7 +252,7 @@
   </div>
   <div id="testQBox"></div>
   <div class="d-flex justify-content-center mt-4">
-    <button class="btn btn-neon px-5 py-3" onclick="submitTest()">✅ Submit & See Results</button>
+    <button class="btn btn-neon px-5 py-3" onclick="submitTest()"> ✔ Submit & See Results</button>
   </div>
 </div>
 
@@ -261,7 +261,7 @@
   <div class="d-flex align-items-center gap-3 mb-4 flex-wrap">
     <button class="btn btn-ghost" onclick="retakeTest()">Retake</button>
     <h4 class="fw-bold mb-0">Your Results</h4>
-    <button class="btn btn-ghost ms-auto" onclick="backToChoose()">🏠 Home</button>
+    <button class="btn btn-ghost ms-auto" onclick="backToChoose()">Home ☻</button>
   </div>
 
   <!-- Score card -->
@@ -275,7 +275,7 @@
   <!-- Weak areas / revision -->
   <div id="revisionBox" class="d-none glass p-4 mb-4">
     <div class="d-flex align-items-center gap-2 mb-3">
-      <span style="font-size:1.4rem">⚠️</span>
+      <span style="font-size:1.4rem">⚠</span>
       <h5 class="fw-bold mb-0" style="color:#f59e0b">Weak Areas — Focus Here</h5>
     </div>
     <div id="weakAreasList" class="mb-3"></div>
@@ -392,7 +392,7 @@ function showGenError(msg) {
 const TYPE_TITLES = { mcq:'Multiple Choice Quiz', truefalse:'True / False Quiz', fillblank:'Fill in the Blanks', short:'Short Answer', long:'Essay Questions' };
 
 function renderTest(qs, type) {
-  document.getElementById('testTitle').textContent = '📝 ' + (TYPE_TITLES[type] || 'Quiz');
+  document.getElementById('testTitle').textContent = '☱ ' + (TYPE_TITLES[type] || 'Quiz');
   const box = document.getElementById('testQBox');
 
   if (type === 'mcq') {
@@ -418,11 +418,11 @@ function renderTest(qs, type) {
         <div class="tf-btns mt-3">
           <label class="tf-btn" id="tf_${i}_t">
             <input type="radio" name="q_${i}" value="true" onchange="updateProgress(qs.length)">
-            <span>✅ True</span>
+            <span>✔ True</span>
           </label>
           <label class="tf-btn" id="tf_${i}_f">
             <input type="radio" name="q_${i}" value="false" onchange="updateProgress(qs.length)">
-            <span>❌ False</span>
+            <span>✘ False</span>
           </label>
         </div>
       </div>`).join('');
@@ -564,7 +564,7 @@ async function submitOpenEnded() {
 
   const res = await postJson(`/app/study/${MID}/score-open`, { type: currentType, questions: currentQuestions, answers: userAnswers });
   submitBtn.disabled = false;
-  submitBtn.textContent = '✅ Submit & See Results';
+  submitBtn.textContent = '✔ Submit & See Results';
 
   if (!res.ok) { alert('Scoring failed: ' + (res.error || 'Unknown error')); return; }
   renderResults(res, currentType);
@@ -636,7 +636,7 @@ function renderResults(res, type) {
         </div>
         ${b.chosen>=0?`<div class="rrow"><span class="muted small">Your answer:</span> <span class="${b.is_correct?'text-success':'text-danger'} fw-semibold">${esc(b.options[b.chosen]||'')}</span></div>`:'<div class="rrow muted small"><em>Not answered</em></div>'}
         ${!b.is_correct?`<div class="rrow"><span class="muted small">Correct:</span> <span class="fw-semibold" style="color:var(--neon-1)">${esc(b.options[b.correct]||'')}</span></div>`:''}
-        ${b.explanation?`<div class="rexpl mt-2"><strong>💡</strong> ${esc(b.explanation)}</div>`:''}
+        ${b.explanation?`<div class="rexpl mt-2"><strong>⚡</strong> ${esc(b.explanation)}</div>`:''}
       </div>`).join('');
 
   } else if (type === 'truefalse') {
@@ -675,7 +675,7 @@ function renderResults(res, type) {
             <strong>Q${i+1}. ${esc(q.q||'')}</strong>
             <span class="rbadge" style="background:${scoreColor}22;color:${scoreColor}">${r.score}/10</span>
           </div>
-          <div class="rexpl mt-2"><strong>📝 Feedback:</strong> ${esc(r.feedback||'')}</div>
+          <div class="rexpl mt-2"><strong>☳ Feedback:</strong> ${esc(r.feedback||'')}</div>
           <details class="mt-2">
             <summary class="muted small" style="cursor:pointer">Show model answer</summary>
             <div class="rexpl mt-1">${esc(r.correct_answer||'')}</div>

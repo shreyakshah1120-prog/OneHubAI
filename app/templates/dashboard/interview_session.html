@@ -54,7 +54,7 @@
 
       <!-- Text input fallback -->
       <div class="mt-3">
-        <label class="muted small mb-1 d-block">💬 Or type your answer here:</label>
+        <label class="muted small mb-1 d-block">◉ Or type your answer here:</label>
         <textarea id="textAnswerInput" class="form-control" rows="3" 
           placeholder="Type your answer here if mic is not working…"
           oninput="onTextInput(this.value)"
@@ -64,10 +64,10 @@
       <!-- Submit answer -->
       <div class="d-flex gap-2 mt-3">
         <button class="btn btn-neon px-4" id="submitAnswerBtn" onclick="submitAnswer()" style="display:none;">
-          ✅ Submit Answer
+          ✔ Submit Answer
         </button>
         <button class="btn btn-ghost px-3" id="clearAnswerBtn" onclick="clearAnswer()" style="display:none;">
-          🗑 Clear
+          ✘ Clear
         </button>
       </div>
     </div>
@@ -75,7 +75,7 @@
     <!-- AI Feedback Card -->
     <div class="glass p-4 mb-3" id="feedbackCard" style="display:none;">
       <div class="d-flex align-items-center gap-2 mb-3">
-        <span style="font-size:1.3rem;">🤖</span>
+        <span style="font-size:1.3rem;">✪</span>
         <h6 class="fw-bold mb-0">AI Feedback</h6>
         <span class="chip ms-auto" id="feedbackBadge">Feedback</span>
       </div>
@@ -261,11 +261,11 @@ function toggleMic() {
     currentAnswerText = finalText.trim();
     if (currentAnswerText) {
       document.getElementById('liveAnswer').textContent = currentAnswerText;
-      document.getElementById('answerStatus').textContent = '✅ Answer recorded — click Submit Answer';
+      document.getElementById('answerStatus').textContent = '✔ Answer recorded — click Submit Answer';
       document.getElementById('submitAnswerBtn').style.display = '';
       document.getElementById('clearAnswerBtn').style.display = '';
     } else {
-      document.getElementById('answerStatus').textContent = '⚠️ No speech detected. Try again.';
+      document.getElementById('answerStatus').textContent = '⚠ No speech detected. Try again.';
     }
   };
 
@@ -296,7 +296,7 @@ function onTextInput(val) {
   currentAnswerText = val.trim();
   if (currentAnswerText) {
     document.getElementById('liveAnswer').textContent = currentAnswerText;
-    document.getElementById('answerStatus').textContent = '✅ Answer ready — click Submit Answer';
+    document.getElementById('answerStatus').textContent = '✔ Answer ready — click Submit Answer';
     document.getElementById('submitAnswerBtn').style.display = '';
     document.getElementById('clearAnswerBtn').style.display = '';
   } else {
@@ -328,7 +328,7 @@ async function submitAnswer() {
   addToTranscript('Q' + (currentQIndex + 1), QUESTIONS[currentQIndex], currentAnswerText);
 
   // Get AI feedback
-  document.getElementById('answerStatus').textContent = '🤖 AI is evaluating your answer…';
+  document.getElementById('answerStatus').textContent = '✦ AI is evaluating your answer…';
   document.getElementById('feedbackCard').style.display = 'block';
   document.getElementById('feedbackText').innerHTML = '<div class="d-flex gap-2 align-items-center muted"><span class="spinner"></span> Getting feedback…</div>';
 
@@ -387,7 +387,7 @@ function addToTranscript(label, question, answer) {
   div.className = 'mb-3';
   div.innerHTML = `
     <div class="muted small fw-bold mb-1">${label}: ${escapeHtml(question)}</div>
-    <div class="bubble" style="font-size:.85rem;">🧑 ${escapeHtml(answer)}</div>
+    <div class="bubble" style="font-size:.85rem;">☻ ${escapeHtml(answer)}</div>
   `;
   list.appendChild(div);
   list.scrollTop = list.scrollHeight;
@@ -401,7 +401,7 @@ async function generateReport() {
     window.location = res.redirect;
   } else {
     showToast('Report generation failed.', 'error');
-    document.getElementById('reportBtn').innerHTML = '📊 Generate Report';
+    document.getElementById('reportBtn').innerHTML = '▥ Generate Report';
     document.getElementById('reportBtn').disabled = false;
   }
 }

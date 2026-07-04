@@ -5,7 +5,7 @@
 {% block content %}
 <div class="d-flex flex-wrap align-items-center justify-content-between mb-4">
   <div>
-    <h2 class="fw-bold mb-1">📜 <span class="gradient-text">Activity History</span></h2>
+    <h2 class="fw-bold mb-1">☰ <span class="gradient-text">Activity History</span></h2>
     <p class="muted mb-0">All your AI sessions, generations, and reports in one timeline.</p>
   </div>
   <form method="POST" action="{{ url_for('history.clear') }}" onsubmit="return confirm('Clear all history? This cannot be undone.')">
@@ -35,12 +35,12 @@
     <div class="list-row history-item text-decoration-none" data-module="{{ ev.module }}" data-title="{{ ev.title|lower }}">
       <a href="{{ url_for('history.open_event', eid=ev.id) }}" class="d-flex align-items-center gap-3 text-decoration-none flex-grow-1">
         <span style="font-size:1.4rem">
-          {% if ev.module=='chat' %}🎯
-          {% elif ev.module=='image' %}🖼️
-          {% elif ev.module=='study' %}📚
+          {% if ev.module=='chat' %}✦
+          {% elif ev.module=='image' %}▣
+          {% elif ev.module=='study' %}☱
           {% elif ev.module=='interview' %}🎤
-          {% elif ev.module=='debate' %}🧠
-          {% elif ev.module=='health' %}🏥
+          {% elif ev.module=='debate' %}⌘
+          {% elif ev.module=='health' %}✜
           {% elif ev.module=='voice' %}🎙️
           {% else %}✨{% endif %}
         </span>

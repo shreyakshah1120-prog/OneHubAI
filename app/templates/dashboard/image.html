@@ -33,14 +33,14 @@
       <div class="text-truncate"><strong>{{ img.prompt[:60] }}</strong></div>
       <div class="d-flex justify-content-between align-items-center mt-1">
         <span class="chip">{{ img.provider }}</span>
-        <a class="muted small text-decoration-none" download href="{{ url_for('static', filename='generated/' ~ img.file_path) }}">⬇ PNG</a>
+        <a class="muted small text-decoration-none" download href="{{ url_for('static', filename='generated/' ~ img.file_path) }}">↓ PNG</a>
       </div>
     </figcaption>
   </figure>
   {% endfor %}
 </div>
 {% else %}
-<div class="glass p-5 text-center muted"><div style="font-size:3rem">🖼️</div><p class="mb-0">Your generated images will appear here.</p></div>
+<div class="glass p-5 text-center muted"><div style="font-size:3rem">▣</div><p class="mb-0">Your generated images will appear here.</p></div>
 {% endif %}
 {% endblock %}
 

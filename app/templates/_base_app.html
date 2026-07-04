@@ -89,11 +89,11 @@
     <a class="sidebar-link {% if m=='home' %}active{% endif %}" href="{{ url_for('dashboard.home') }}">🏠 <span>Home</span></a>
 
     <div class="sidebar-section">AI Tools</div>
-    <a class="sidebar-link {% if m=='studio' %}active{% endif %}" href="{{ url_for('ai_studio.index') }}">🎯 <span> Create Mode</span></a>
+    <a class="sidebar-link {% if m=='studio' %}active{% endif %}" href="{{ url_for('ai_studio.index') }}">⚛ <span> Create Mode</span></a>
     <a class="sidebar-link {% if m=='interview' %}active{% endif %}" href="{{ url_for('interview.index') }}">🎤 <span> Interview Pro</span></a>
-    <a class="sidebar-link {% if m=='debate' %}active{% endif %}" href="{{ url_for('debate.index') }}">🧠 <span> Debate Arena</span></a>
-    <a class="sidebar-link {% if m=='study' %}active{% endif %}" href="{{ url_for('study.index') }}">📚 <span>Study Lab</span></a>
-    <a class="sidebar-link {% if m=='health' %}active{% endif %}" href="{{ url_for('health.index') }}">🏥 <span>Body Check</span></a>
+    <a class="sidebar-link {% if m=='debate' %}active{% endif %}" href="{{ url_for('debate.index') }}">⌘ <span> Debate Arena</span></a>
+    <a class="sidebar-link {% if m=='study' %}active{% endif %}" href="{{ url_for('study.index') }}">☱ <span>Study Lab</span></a>
+    <a class="sidebar-link {% if m=='health' %}active{% endif %}" href="{{ url_for('health.index') }}">✜ <span>Body Check</span></a>
 
 
     <div class="sidebar-section">Account</div>
@@ -165,7 +165,7 @@ function closeNotifDrawer() {
 
 const CATEGORY_META = {
   general:  { icon: '🔔', label: 'General',          color: '#6b7db3' },
-  feature:  { icon: '✨', label: 'Feature Release',   color: '#D4AF37' },
+  feature:  { icon: '✦', label: 'Feature Release',   color: '#D4AF37' },
   tool:     { icon: '🛠️', label: 'New AI Tool',       color: '#7c5cff' },
   update:   { icon: '🔄', label: 'Product Update',    color: '#00c6ae' },
   study:    { icon: '📚', label: 'Study Module',      color: '#4ade80' },

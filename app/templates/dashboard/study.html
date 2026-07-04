@@ -47,7 +47,7 @@
   </div>
 
   <button type="button" class="btn btn-neon w-100 py-3" id="uploadBtn" onclick="uploadStudy()" disabled>
-    🚀 Analyze Documents
+    ❖ Analyze Documents
   </button>
 </div>
 
@@ -219,7 +219,7 @@ async function uploadStudy() {
     document.getElementById('uploadLoading').style.display = 'none';
     fill.style.width = '0%';
     uploadBtn.disabled = false;
-    uploadBtn.innerHTML = '🚀 Analyze Documents';
+    uploadBtn.innerHTML = ' ❖ Analyze Documents';
     errorEl.textContent = 'Error: ' + err.message;
     errorEl.style.display = 'block';
   }

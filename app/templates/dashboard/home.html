@@ -305,12 +305,12 @@
 <!-- Stats Grid -->
 <div class="row g-3 mb-4">
   {% set tiles = [
-    ('🎯', 'AI Chats',     stats.chats,      'ai_studio.index', '#D4AF37'),
-    ('🖼️', 'Images',       stats.images,     'image.index',     '#FFD700'),
-    ('📚', 'Study Files',  stats.studies,    'study.index',     '#D4AF37'),
+    ('✦', 'AI Chats',     stats.chats,      'ai_studio.index', '#D4AF37'),
+    ('▣', 'Images',       stats.images,     'image.index',     '#FFD700'),
+    ('☱', 'Study Files',  stats.studies,    'study.index',     '#D4AF37'),
     ('🎤', 'Interviews',   stats.interviews, 'interview.index', '#FFD700'),
-    ('🧠', 'Debates',      stats.debates,    'debate.index',    '#D4AF37'),
-    ('🏥', 'Health Scans', stats.healths,    'health.index',    '#FFD700'),
+    ('⌘', 'Debates',      stats.debates,    'debate.index',    '#D4AF37'),
+    ('✜', 'Health Scans', stats.healths,    'health.index',    '#FFD700'),
   ] %}
   {% for icon, label, value, route, color in tiles %}
   <div class="col-6 col-md-4 col-lg-2">
@@ -342,7 +342,7 @@
       {% set total_activity = chart.chats|sum + chart.images|sum + chart.studies|sum %}
       {% if total_activity == 0 %}
         <div class="zero-state">
-          <div class="zero-icon">📊</div>
+          <div class="zero-icon">▥</div>
           <p class="muted mb-0" style="font-size:0.85rem;">Your activity chart will appear here as you use the platform.</p>
         </div>
       {% else %}
@@ -362,12 +362,12 @@
       <div class="dash-section-title">Quick Launch</div>
       <div class="d-grid gap-2">
         <a class="ql-btn" href="{{ url_for('ai_studio.index') }}">
-          <span class="ql-icon">🎯</span>
+          <span class="ql-icon">⊛</span>
           <span>AI Studio</span>
           <span class="ql-arrow">›</span>
         </a>
         <a class="ql-btn" href="{{ url_for('image.index') }}">
-          <span class="ql-icon">🖼️</span>
+          <span class="ql-icon">▣</span>
           <span>Image Generator</span>
           <span class="ql-arrow">›</span>
         </a>
@@ -377,17 +377,17 @@
           <span class="ql-arrow">›</span>
         </a>
         <a class="ql-btn" href="{{ url_for('study.index') }}">
-          <span class="ql-icon">📚</span>
+          <span class="ql-icon">▥</span>
           <span>Study Assistant</span>
           <span class="ql-arrow">›</span>
         </a>
         <a class="ql-btn" href="{{ url_for('debate.index') }}">
-          <span class="ql-icon">🧠</span>
+          <span class="ql-icon">⌘</span>
           <span>AI Debate</span>
           <span class="ql-arrow">›</span>
         </a>
         <a class="ql-btn" href="{{ url_for('health.index') }}">
-          <span class="ql-icon">🏥</span>
+          <span class="ql-icon">✜</span>
           <span>Health Assistant</span>
           <span class="ql-arrow">›</span>
         </a>
@@ -410,12 +410,12 @@
         <a href="{{ url_for('history.open_event', eid=ev.id) }}"
            class="activity-card-item text-decoration-none d-flex align-items-center gap-3">
           <span class="activity-icon">
-            {% if ev.module == 'chat' %}🎯
-            {% elif ev.module == 'image' %}🖼️
-            {% elif ev.module == 'study' %}📚
+            {% if ev.module == 'chat' %}⊛
+            {% elif ev.module == 'image' %}▣
+            {% elif ev.module == 'study' %}☱
             {% elif ev.module == 'interview' %}🎤
-            {% elif ev.module == 'debate' %}🧠
-            {% elif ev.module == 'health' %}🏥
+            {% elif ev.module == 'debate' %}⌘
+            {% elif ev.module == 'health' %}✜
             {% elif ev.module == 'voice' %}🎙️
             {% else %}{% endif %}
           </span>
@@ -430,7 +430,7 @@
     </div>
   {% else %}
     <div class="zero-state">
-      <div class="zero-icon">✨</div>
+      <div class="zero-icon">✦</div>
       <p class="muted mb-3" style="font-size:0.88rem;">No activity yet. Every session you complete will appear here.</p>
       <a href="{{ url_for('ai_studio.index') }}" class="btn btn-neon btn-sm">Try AI Studio →</a>
     </div>

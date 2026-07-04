@@ -8,8 +8,8 @@
       <span class="brand-mark"><img src="{{ url_for('static', filename='img/logo.png') }}" alt="OneHubAI Logo" class="brand-logo-img"></span>
       <span class="brand-name">One<span>HubAI</span></span>
     </a>
-    <h3 class="fw-bold mb-1">Create your workspace</h3>
-    <p class="muted mb-4">Free forever — bring your own keys.</p>
+    <h3 class="fw-bold mb-1">Create your workspace ☺</h3>
+    <p class="muted mb-4"></p>
 
     {% with messages = get_flashed_messages(with_categories=true) %}
       {% for cat, msg in messages %}<div class="alert alert-{{ cat }}">{{ msg }}</div>{% endfor %}
@@ -18,7 +18,7 @@
     <form method="POST" id="signupForm">
       <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
       <div class="mb-3">
-        <label class="form-label">Full name</label>
+        <label class="form-label">What should I call you?</label>
         <input class="form-control" name="name" placeholder="Arjun Kumar" required autofocus>
       </div>
       <div class="mb-3">
@@ -42,7 +42,7 @@
         <input class="form-check-input" type="checkbox" id="terms" required>
         <label class="form-check-label muted" for="terms">I agree to the <a href="#" class="gradient-text">Terms</a> &amp; <a href="#" class="gradient-text">Privacy Policy</a></label>
       </div>
-      <button class="btn btn-neon w-100 py-2 mb-3" id="signupBtn">Create account →</button>
+      <button class="btn btn-neon w-100 py-2 mb-3" id="signupBtn">Create account ➤</button>
       <p class="text-center muted mb-0">Already have one? <a href="{{ url_for('auth.login') }}" class="gradient-text fw-bold text-decoration-none">Log in</a></p>
     </form>
   </div>
