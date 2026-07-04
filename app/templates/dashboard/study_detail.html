@@ -1,0 +1,792 @@
+{% extends "_base_app.html" %}
+{% set active_module = 'study' %}
+{% block title %}{{ m.filename }} — Study{% endblock %}
+
+{% block content %}
+<div class="d-flex flex-wrap align-items-center justify-content-between mb-4">
+  <div>
+    <h2 class="fw-bold mb-1">{{ m.filename[:60] }}{% if m.filename|length > 60 %}…{% endif %}</h2>
+    <p class="muted mb-0">Uploaded {{ m.created_at.strftime('%b %d, %Y') }}</p>
+  </div>
+  <a href="{{ url_for('study.index') }}" class="btn btn-ghost">← Library</a>
+</div>
+
+<!-- ══════════════ SCREEN 1: CHOOSE MODE ══════════════ -->
+<div id="screenChoose">
+  <div class="row g-4 justify-content-center mb-2">
+    <div class="col-md-5">
+      <div class="mode-card glass p-4 text-center" onclick="showSummary()">
+        <div style="font-size:3rem">📚</div>
+        <h4 class="fw-bold mt-2 mb-1">Study and score it</h4>
+        <p class="muted small mb-3">Detailed study notes with examples, formulas, exam tips, revision and more.</p>
+        <button class="btn btn-neon w-100">View Summary →</button>
+      </div>
+     </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════ SCREEN 2: SUMMARY ══════════════ -->
+<div id="screenSummary" class="d-none">
+  <div class="d-flex align-items-center gap-3 mb-4 flex-wrap">
+    <button class="btn btn-ghost" onclick="backToChoose()">← Back</button>
+    <h4 class="fw-bold mb-0">Professional Study Notes</h4>
+    <button class="btn btn-ghost ms-auto" onclick="showTestSetup()">📝 Take Test →</button>
+  </div>
+
+  <!-- Tab nav for summary sections -->
+  <div class="summary-tabs mb-4">
+    <button class="stab active" onclick="showSTab('overview',this)">Overview</button>
+    <button class="stab" onclick="showSTab('keypoints',this)">Key Points</button>
+    <button class="stab" onclick="showSTab('examples',this)">Examples</button>
+    <button class="stab" onclick="showSTab('formulas',this)">Formulas</button>
+    <button class="stab" onclick="showSTab('realworld',this)">Real World</button>
+    <button class="stab" onclick="showSTab('examtips',this)">Exam Tips</button>
+    <button class="stab" onclick="showSTab('mistakes',this)">Mistakes</button>
+    <button class="stab" onclick="showSTab('revision',this)">Revision</button>
+    <button class="stab" onclick="showSTab('longnotes',this)">Full Notes</button>
+  </div>
+
+  <!-- Overview -->
+  <div id="stab-overview" class="stab-content">
+    {% if m.summary %}
+    <div class="glass p-4 mb-3">
+      <h5 class="fw-bold mb-3 sec-title">Summary Overview</h5>
+      <div class="study-content">{{ m.summary | safe }}</div>
+    </div>
+    {% endif %}
+    {% if extra.get('chapter_summary') %}
+    <div class="glass p-4 mb-3">
+      <h5 class="fw-bold mb-3 sec-title">Chapter / Section Breakdown</h5>
+      <div class="study-content">{{ extra.get('chapter_summary','') | safe }}</div>
+    </div>
+    {% endif %}
+    {% if extra.get('subtopics') %}
+    <div class="glass p-4 mb-3">
+      <h5 class="fw-bold mb-3 sec-title">Subtopics Covered</h5>
+      <div class="study-content">{{ extra.get('subtopics','') | safe }}</div>
+    </div>
+    {% endif %}
+    {% if not m.summary %}
+    <div class="glass p-4 text-center"><p class="muted">No summary available.</p></div>
+    {% endif %}
+  </div>
+
+  <!-- Key Points -->
+  <div id="stab-keypoints" class="stab-content d-none">
+    <div class="glass p-4">
+      <h5 class="fw-bold mb-3 sec-title">Key Points & Concepts</h5>
+      {% if extra.get('key_points') %}
+      <div class="study-content key-points-content">{{ extra.get('key_points','') | safe }}</div>    
+      {% else %}
+      <p class="muted">Key points not available.</p>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Examples -->
+  <div id="stab-examples" class="stab-content d-none">
+    <div class="glass p-4">
+      <h5 class="fw-bold mb-3 sec-title">Examples & Illustrations</h5>
+      {% if extra.get('examples') %}
+      <div class="study-content">{{ extra.get('examples','') | safe }}</div>
+      {% else %}
+      <p class="muted">Examples not available.</p>
+      {% endif %}
+    </div>
+    {% if extra.get('diagrams_text') %}
+    <div class="glass p-4 mt-3">
+      <h5 class="fw-bold mb-3 sec-title">Diagrams & Visual Aids</h5>
+      <div class="study-content">{{ extra.get('diagrams_text','') | safe }}</div>
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- Formulas -->
+  <div id="stab-formulas" class="stab-content d-none">
+    <div class="glass p-4">
+      <h5 class="fw-bold mb-3 sec-title">Formulas & Equations</h5>
+      {% if extra.get('formulas') %}
+      <div class="study-content formula-content">{{ extra.get('formulas','') | safe }}</div>
+      {% else %}
+      <p class="muted">No formulas available for this topic.</p>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Real World -->
+  <div id="stab-realworld" class="stab-content d-none">
+    <div class="glass p-4">
+      <h5 class="fw-bold mb-3 sec-title">Real-World Applications</h5>
+      {% if extra.get('real_world') %}
+      <div class="study-content">{{ extra.get('real_world','') | safe }}</div>
+      {% else %}
+      <p class="muted">Real-world applications not available.</p>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Exam Tips -->
+  <div id="stab-examtips" class="stab-content d-none">
+    <div class="glass p-4">
+      <h5 class="fw-bold mb-3 sec-title">Exam Tips</h5>
+      {% if extra.get('exam_tips') %}
+      <div class="study-content exam-tips-content">{{ extra.get('exam_tips','') | safe }}</div>
+      {% else %}
+      <p class="muted">Exam tips not available.</p>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Common Mistakes -->
+  <div id="stab-mistakes" class="stab-content d-none">
+    <div class="glass p-4">
+      <h5 class="fw-bold mb-3 sec-title">Common Mistakes to Avoid</h5>
+      {% if extra.get('common_mistakes') %}
+      <div class="study-content mistakes-content">{{ extra.get('common_mistakes','') | safe }}</div>
+      {% else %}
+      <p class="muted">Common mistakes not available.</p>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Revision Notes -->
+  <div id="stab-revision" class="stab-content d-none">
+    <div class="glass p-4">
+      <h5 class="fw-bold mb-3 sec-title">Quick Revision Notes</h5>
+      {% if m.short_notes %}
+      <div class="study-content revision-content">{{ m.short_notes | safe }}</div>
+      {% else %}
+      <p class="muted">Revision notes not available.</p>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Long Notes -->
+  <div id="stab-longnotes" class="stab-content d-none">
+    <div class="glass p-4">
+      <h5 class="fw-bold mb-3 sec-title">Comprehensive Study Notes</h5>
+      {% if m.long_notes %}
+      <div class="study-content">{{ m.long_notes | safe }}</div>
+      {% else %}
+      <p class="muted">Full notes not available.</p>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="text-center mt-4">
+    <button class="btn btn-neon px-5" onclick="showTestSetup()">Generate Test from this Material →</button>
+  </div>
+</div>
+
+<!-- ══════════════ SCREEN 3: TEST SETUP ══════════════ -->
+<div id="screenTestSetup" class="d-none">
+  <div class="d-flex align-items-center gap-3 mb-4">
+    <button class="btn btn-ghost" onclick="backToChoose()">← Back</button>
+    <h4 class="fw-bold mb-0">Test Generator</h4>
+  </div>
+
+  <div class="glass p-4 mb-4">
+    <h5 class="fw-bold mb-4">Step 1 — Choose Question Type</h5>
+    <div class="qtype-grid">
+      <div class="qtype-card active" data-type="mcq" onclick="selectQType(this)">
+        <div class="qtype-icon">🎯</div>
+        <div class="qtype-label">MCQ</div>
+        <div class="qtype-sub">Multiple Choice (A/B/C/D)</div>
+      </div>
+      <div class="qtype-card" data-type="truefalse" onclick="selectQType(this)">
+        <div class="qtype-icon">✅</div>
+        <div class="qtype-label">True / False</div>
+        <div class="qtype-sub">Decide correct statement</div>
+      </div>
+      <div class="qtype-card" data-type="fillblank" onclick="selectQType(this)">
+        <div class="qtype-icon">✏️</div>
+        <div class="qtype-label">Fill in Blanks</div>
+        <div class="qtype-sub">Complete the sentence</div>
+      </div>
+      <div class="qtype-card" data-type="short" onclick="selectQType(this)">
+        <div class="qtype-icon">📝</div>
+        <div class="qtype-label">Short Answer</div>
+        <div class="qtype-sub">2-4 sentence answers</div>
+      </div>
+      <div class="qtype-card" data-type="long" onclick="selectQType(this)">
+        <div class="qtype-icon">📄</div>
+        <div class="qtype-label">Long Answer</div>
+        <div class="qtype-sub">Essay / detailed response</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="glass p-4 mb-4">
+    <h5 class="fw-bold mb-4">Step 2 — Choose Number of Questions</h5>
+    <div class="count-grid mb-3">
+      <div class="count-btn" data-n="5" onclick="selectCount(this)">5</div>
+      <div class="count-btn active" data-n="10" onclick="selectCount(this)">10</div>
+      <div class="count-btn" data-n="15" onclick="selectCount(this)">15</div>
+      <div class="count-btn" data-n="20" onclick="selectCount(this)">20</div>
+      <div class="count-btn" data-n="30" onclick="selectCount(this)">30</div>
+      <div class="count-btn" data-n="50" onclick="selectCount(this)">50</div>
+    </div>
+    <div class="d-flex align-items-center gap-3">
+      <span class="muted small">Custom:</span>
+      <input type="number" id="customCount" class="form-control" min="1" max="100" placeholder="e.g. 25" style="max-width:120px">
+    </div>
+  </div>
+
+  <button class="btn btn-neon w-100 py-3" id="genTestBtn" onclick="generateTest()">
+    🪄 Generate Test
+  </button>
+  <div id="genLoader" class="d-none mt-3 text-center">
+    <div class="spinner mb-2"></div>
+    <div class="muted small">AI is crafting your questions… (10-30 seconds)</div>
+  </div>
+  <div id="genError" class="d-none mt-3 alert alert-warning"></div>
+</div>
+
+<!-- ══════════════ SCREEN 4: TAKING TEST ══════════════ -->
+<div id="screenTest" class="d-none">
+  <div class="d-flex align-items-center gap-3 mb-4 flex-wrap">
+    <button class="btn btn-ghost" onclick="showScreen('screenTestSetup')">← Back</button>
+    <h4 class="fw-bold mb-0" id="testTitle">Quiz</h4>
+    <span class="chip ms-auto" id="progressChip">0 / 0</span>
+  </div>
+  <div id="testQBox"></div>
+  <div class="d-flex justify-content-center mt-4">
+    <button class="btn btn-neon px-5 py-3" onclick="submitTest()">✅ Submit & See Results</button>
+  </div>
+</div>
+
+<!-- ══════════════ SCREEN 5: RESULTS ══════════════ -->
+<div id="screenResults" class="d-none">
+  <div class="d-flex align-items-center gap-3 mb-4 flex-wrap">
+    <button class="btn btn-ghost" onclick="retakeTest()">Retake</button>
+    <h4 class="fw-bold mb-0">Your Results</h4>
+    <button class="btn btn-ghost ms-auto" onclick="backToChoose()">🏠 Home</button>
+  </div>
+
+  <!-- Score card -->
+  <div class="glass p-4 text-center mb-4" id="scoreCard">
+    <div id="scoreEmoji" style="font-size:3.5rem"></div>
+    <h2 class="fw-bold mt-2 mb-1" id="scoreLabel"></h2>
+    <p class="muted" id="scoreSub"></p>
+    <div id="scoreRing"></div>
+  </div>
+
+  <!-- Weak areas / revision -->
+  <div id="revisionBox" class="d-none glass p-4 mb-4">
+    <div class="d-flex align-items-center gap-2 mb-3">
+      <span style="font-size:1.4rem">⚠️</span>
+      <h5 class="fw-bold mb-0" style="color:#f59e0b">Weak Areas — Focus Here</h5>
+    </div>
+    <div id="weakAreasList" class="mb-3"></div>
+    <div id="revisionContent" class="study-content"></div>
+  </div>
+
+  <!-- Breakdown -->
+  <div id="breakdownBox"></div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+const MID = {{ m.id }};
+let currentType = 'mcq';
+let selectedCount = 10;
+let currentQuestions = [];
+
+/* ── Screen navigation ─────────────────────────────── */
+function showScreen(id) {
+  ['screenChoose','screenSummary','screenTestSetup','screenTest','screenResults']
+    .forEach(s => document.getElementById(s).classList.add('d-none'));
+  document.getElementById(id).classList.remove('d-none');
+
+  // Reset the content pane scroll directly
+  const contentPane = document.querySelector('.content');
+  if (contentPane) {
+    contentPane.scrollTop = 0;
+  }
+  window.scrollTo(0, 0);
+  document.documentElement.scrollTop = 0;
+  document.body.scrollTop = 0;
+}
+function backToChoose()  { showScreen('screenChoose'); }
+function showSummary() {
+  showScreen('screenSummary');
+  // Scroll the page to very top after screen switch
+  setTimeout(() => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    document.querySelector('.content')?.scrollTo({ top: 0, behavior: 'smooth' });
+    document.documentElement.scrollTop = 0;
+    document.body.scrollTop = 0;
+  }, 50);
+}
+function showTestSetup() { showScreen('screenTestSetup'); }
+
+/* ── Summary tabs ──────────────────────────────────── */
+function showSTab(id, btn) {
+  document.querySelectorAll('.stab-content').forEach(el => el.classList.add('d-none'));
+  document.querySelectorAll('.stab').forEach(b => b.classList.remove('active'));
+  document.getElementById('stab-' + id).classList.remove('d-none');
+  btn.classList.add('active');
+}
+
+/* ── Test type selection ────────────────────────────── */
+function selectQType(el) {
+  document.querySelectorAll('.qtype-card').forEach(c => c.classList.remove('active'));
+  el.classList.add('active');
+  currentType = el.dataset.type;
+}
+
+/* ── Count selection ────────────────────────────────── */
+function selectCount(el) {
+  document.querySelectorAll('.count-btn').forEach(b => b.classList.remove('active'));
+  el.classList.add('active');
+  selectedCount = parseInt(el.dataset.n);
+  document.getElementById('customCount').value = '';
+}
+document.getElementById('customCount').addEventListener('input', function() {
+  document.querySelectorAll('.count-btn').forEach(b => b.classList.remove('active'));
+  selectedCount = parseInt(this.value) || 10;
+});
+
+/* ── Generate test ──────────────────────────────────── */
+async function generateTest() {
+  const custom = parseInt(document.getElementById('customCount').value);
+  if (!isNaN(custom) && custom > 0) selectedCount = custom;
+
+  document.getElementById('genTestBtn').disabled = true;
+  document.getElementById('genLoader').classList.remove('d-none');
+  document.getElementById('genError').classList.add('d-none');
+
+  try {
+    const res = await postJson(`/app/study/${MID}/generate-questions`, { type: currentType, count: selectedCount });
+    document.getElementById('genTestBtn').disabled = false;
+    document.getElementById('genLoader').classList.add('d-none');
+
+    if (!res.ok) {
+      showGenError(res.error || 'Failed to generate questions.');
+      return;
+    }
+    if (!res.questions || res.questions.length === 0) {
+      showGenError('No questions generated. Please try again.');
+      return;
+    }
+    currentQuestions = res.questions;
+    renderTest(currentQuestions, currentType);
+    showScreen('screenTest');
+  } catch(e) {
+    document.getElementById('genTestBtn').disabled = false;
+    document.getElementById('genLoader').classList.add('d-none');
+    showGenError('Network error. Please try again.');
+  }
+}
+
+function showGenError(msg) {
+  const el = document.getElementById('genError');
+  el.textContent = msg;
+  el.classList.remove('d-none');
+}
+
+/* ── Render test questions ──────────────────────────── */
+const TYPE_TITLES = { mcq:'Multiple Choice Quiz', truefalse:'True / False Quiz', fillblank:'Fill in the Blanks', short:'Short Answer', long:'Essay Questions' };
+
+function renderTest(qs, type) {
+  document.getElementById('testTitle').textContent = '📝 ' + (TYPE_TITLES[type] || 'Quiz');
+  const box = document.getElementById('testQBox');
+
+  if (type === 'mcq') {
+    box.innerHTML = qs.map((q, i) => `
+      <div class="glass p-4 mb-3 q-card" id="qc_${q.id}">
+        <div class="q-num">Q${i+1} of ${qs.length}</div>
+        <div class="q-text">${esc(q.q || q.question)}</div>
+        <div class="q-opts mt-3">
+          ${(q.options||[]).map((o, oi) => `
+            <label class="q-opt" id="opt_${q.id}_${oi}">
+              <input type="radio" name="q_${q.id}" value="${oi}" onchange="onMCQChange(${q.id}, ${oi}, ${qs.length})">
+              <span class="opt-mk">${'ABCD'[oi]}</span>
+              <span>${esc(o)}</span>
+            </label>`).join('')}
+        </div>
+      </div>`).join('');
+
+  } else if (type === 'truefalse') {
+    box.innerHTML = qs.map((q, i) => `
+      <div class="glass p-4 mb-3 q-card">
+        <div class="q-num">Q${i+1} of ${qs.length}</div>
+        <div class="q-text">${esc(q.q || q.question || '')}</div>
+        <div class="tf-btns mt-3">
+          <label class="tf-btn" id="tf_${i}_t">
+            <input type="radio" name="q_${i}" value="true" onchange="updateProgress(qs.length)">
+            <span>✅ True</span>
+          </label>
+          <label class="tf-btn" id="tf_${i}_f">
+            <input type="radio" name="q_${i}" value="false" onchange="updateProgress(qs.length)">
+            <span>❌ False</span>
+          </label>
+        </div>
+      </div>`).join('');
+
+  } else if (type === 'fillblank') {
+    box.innerHTML = qs.map((q, i) => `
+      <div class="glass p-4 mb-3 q-card">
+        <div class="q-num">Q${i+1} of ${qs.length}</div>
+        <div class="q-text mb-3">${esc(q.q || '').replace(/___/g, '<span class="blank-marker">___</span>')}</div>
+        ${q.hint ? `<div class="muted small mb-2">💡 Hint: ${esc(q.hint)}</div>` : ''}
+        <input type="text" class="form-control blank-input" id="blank_${i}" placeholder="Your answer…" oninput="updateProgress(qs.length)">
+      </div>`).join('');
+
+  } else if (type === 'short' || type === 'long') {
+    const rows = type === 'long' ? 8 : 4;
+    const marks = type === 'long';
+    box.innerHTML = qs.map((q, i) => `
+      <div class="glass p-4 mb-3 q-card">
+        <div class="q-num">Q${i+1} of ${qs.length}${marks && q.marks ? ` · ${q.marks} marks` : ''}</div>
+        <div class="q-text mb-3">${esc(q.q || '')}</div>
+        ${q.key_points && q.key_points.length ? `<div class="key-points-hint mb-2">📌 Cover: ${q.key_points.map(esc).join(' · ')}</div>` : ''}
+        <textarea class="form-control open-ans" id="ans_${i}" rows="${rows}" placeholder="Write your answer here…" oninput="updateProgress(qs.length)"></textarea>
+      </div>`).join('');
+  }
+
+  updateProgress(qs.length);
+}
+
+function onMCQChange(qid, oi, total) {
+  document.querySelectorAll(`label[id^="opt_${qid}_"]`).forEach(l => l.classList.remove('selected'));
+  document.getElementById(`opt_${qid}_${oi}`).classList.add('selected');
+  updateProgress(total);
+}
+
+function updateProgress(total) {
+  let answered = 0;
+  if (currentType === 'mcq') {
+    answered = document.querySelectorAll('input[type=radio]:checked').length;
+  } else if (currentType === 'truefalse') {
+    answered = document.querySelectorAll('input[type=radio]:checked').length;
+  } else if (currentType === 'fillblank') {
+    answered = [...document.querySelectorAll('.blank-input')].filter(el => el.value.trim()).length;
+  } else {
+    answered = [...document.querySelectorAll('.open-ans')].filter(el => el.value.trim()).length;
+  }
+  document.getElementById('progressChip').textContent = `${answered} / ${total} answered`;
+}
+
+/* ── Submit test ────────────────────────────────────── */
+async function submitTest() {
+  if (currentType === 'mcq') {
+    await submitMCQ();
+  } else {
+    await submitOpenEnded();
+  }
+}
+
+async function submitMCQ() {
+  const answers = {};
+  currentQuestions.forEach(q => {
+    const sel = document.querySelector(`input[name="q_${q.id}"]:checked`);
+    if (sel) answers[q.id] = parseInt(sel.value);
+  });
+  const unanswered = currentQuestions.length - Object.keys(answers).length;
+  if (unanswered > 0 && !confirm(`${unanswered} unanswered question(s). Submit anyway?`)) return;
+
+  const res = await postJson(`/app/study/${MID}/mcq/score`, { answers });
+  if (!res.ok) { alert('Error submitting answers.'); return; }
+  renderResults(res, 'mcq');
+  showScreen('screenResults');
+}
+
+async function submitOpenEnded() {
+  let userAnswers = {};
+  let unanswered = 0;
+
+  if (currentType === 'truefalse') {
+    currentQuestions.forEach((q, i) => {
+      const sel = document.querySelector(`input[name="q_${i}"]:checked`);
+      if (sel) userAnswers[i] = sel.value;
+      else unanswered++;
+    });
+  } else if (currentType === 'fillblank') {
+    currentQuestions.forEach((q, i) => {
+      const val = (document.getElementById(`blank_${i}`)?.value || '').trim();
+      userAnswers[i] = val;
+      if (!val) unanswered++;
+    });
+  } else {
+    currentQuestions.forEach((q, i) => {
+      const val = (document.getElementById(`ans_${i}`)?.value || '').trim();
+      userAnswers[i] = val;
+      if (!val) unanswered++;
+    });
+  }
+
+  if (unanswered > 0 && !confirm(`${unanswered} unanswered. Submit anyway?`)) return;
+
+  // For true/false — score locally
+  if (currentType === 'truefalse') {
+    let correct = 0;
+    const breakdown = currentQuestions.map((q, i) => {
+      const userAns = userAnswers[i];
+      const correctAns = q.correct === true || q.correct === 'true';
+      const userBool = userAns === 'true';
+      const isCorrect = (userAns !== undefined) && (userBool === correctAns);
+      if (isCorrect) correct++;
+      return {
+        question: q.q || '', is_correct: isCorrect,
+        correct_label: correctAns ? 'True' : 'False',
+        user_label: userAns === undefined ? 'Not answered' : (userBool ? 'True' : 'False'),
+        explanation: q.explanation || ''
+      };
+    });
+    renderResults({ score: correct, total: currentQuestions.length, percent: Math.round(correct*100/currentQuestions.length), breakdown }, 'truefalse');
+    showScreen('screenResults');
+    return;
+  }
+
+  // For fill-blank — score locally (case-insensitive)
+  if (currentType === 'fillblank') {
+    let correct = 0;
+    const breakdown = currentQuestions.map((q, i) => {
+      const userAns = (userAnswers[i] || '').toLowerCase().trim();
+      const correctAns = (q.answer || '').toLowerCase().trim();
+      const isCorrect = userAns === correctAns || correctAns.split('/').map(s=>s.trim()).includes(userAns);
+      if (isCorrect) correct++;
+      return { question: q.q || '', is_correct: isCorrect, user_answer: userAnswers[i] || '', correct_answer: q.answer || '', explanation: q.explanation || '' };
+    });
+    renderResults({ score: correct, total: currentQuestions.length, percent: Math.round(correct*100/currentQuestions.length), breakdown }, 'fillblank');
+    showScreen('screenResults');
+    return;
+  }
+
+  // For short/long — use AI scoring
+  const submitBtn = document.querySelector('#screenTest .btn-neon');
+  submitBtn.disabled = true;
+  submitBtn.textContent = '⏳ AI is evaluating…';
+
+  const res = await postJson(`/app/study/${MID}/score-open`, { type: currentType, questions: currentQuestions, answers: userAnswers });
+  submitBtn.disabled = false;
+  submitBtn.textContent = '✅ Submit & See Results';
+
+  if (!res.ok) { alert('Scoring failed: ' + (res.error || 'Unknown error')); return; }
+  renderResults(res, currentType);
+  showScreen('screenResults');
+}
+
+/* ── Render results ─────────────────────────────────── */
+function renderResults(res, type) {
+  const pct = res.percent || 0;
+  let emoji = '😢', msg = 'Keep practising!', color = '#ef4444';
+  if (pct >= 90) { emoji = '🏆'; msg = 'Outstanding!'; color = '#22c55e'; }
+  else if (pct >= 75) { emoji = '🎉'; msg = 'Great job!'; color = '#3b82f6'; }
+  else if (pct >= 50) { emoji = '👍'; msg = 'Good effort!'; color = '#f59e0b'; }
+
+  document.getElementById('scoreEmoji').textContent = emoji;
+  document.getElementById('scoreLabel').textContent = `${res.score} / ${res.total} correct`;
+  document.getElementById('scoreSub').textContent = `${pct}% — ${msg}`;
+  document.getElementById('scoreRing').innerHTML = `
+    <svg viewBox="0 0 120 120" class="ring-svg" style="width:130px;height:130px;margin:1rem auto;display:block">
+      <circle cx="60" cy="60" r="50" fill="none" stroke="var(--border)" stroke-width="10"/>
+      <circle cx="60" cy="60" r="50" fill="none" stroke="${color}" stroke-width="10"
+        stroke-linecap="round" stroke-dasharray="314"
+        stroke-dashoffset="${314 - (314*pct/100)}" transform="rotate(-90 60 60)"/>
+      <text x="60" y="65" text-anchor="middle" fill="var(--text-0)" font-size="18" font-weight="700">${pct}%</text>
+    </svg>`;
+
+  // Revision notes for weak areas (MCQ only)
+  const revBox = document.getElementById('revisionBox');
+  const weakList = document.getElementById('weakAreasList');
+  const revContent = document.getElementById('revisionContent');
+
+  if (type === 'mcq' && res.breakdown) {
+    const wrongItems = res.breakdown.filter(b => !b.is_correct);
+    if (wrongItems.length > 0) {
+      weakList.innerHTML = `
+        <div class="mb-2" style="font-size:.85rem;color:var(--text-2);">
+          You got <strong style="color:#ef4444">${wrongItems.length}</strong> question(s) wrong. 
+          Review these topics:
+        </div>
+        <div class="d-flex flex-wrap gap-2 mb-3">
+          ${wrongItems.map(b => `<span style="background:rgba(239,68,68,0.12);color:#ef4444;border:1px solid rgba(239,68,68,0.3);border-radius:6px;padding:2px 10px;font-size:.78rem;font-weight:600;">${esc(b.question.substring(0,45))}${b.question.length>45?'…':''}</span>`).join('')}
+        </div>`;
+      revBox.classList.remove('d-none');
+    } else {
+      revBox.classList.add('d-none');
+    }
+    if (res.revision_notes) {
+      revContent.textContent = res.revision_notes;
+    } else {
+      revContent.innerHTML = '';
+    }
+  } else if (res.revision_notes) {
+    weakList.innerHTML = '';
+    revContent.textContent = res.revision_notes;
+    revBox.classList.remove('d-none');
+  } else {
+    revBox.classList.add('d-none');
+  }
+
+  const bd = document.getElementById('breakdownBox');
+  bd.innerHTML = `<h5 class="fw-bold mb-3">📋 Question Review</h5>`;
+
+  if (type === 'mcq') {
+    bd.innerHTML += res.breakdown.map((b, i) => `
+      <div class="glass p-4 mb-3 result-card ${b.is_correct?'rc-ok':'rc-bad'}">
+        <div class="d-flex justify-content-between align-items-start mb-2 flex-wrap gap-2">
+          <strong>Q${i+1}. ${esc(b.question)}</strong>
+          <span class="rbadge ${b.is_correct?'rb-ok':'rb-bad'}">${b.is_correct?'✓ Correct':'✗ Wrong'}</span>
+        </div>
+        ${b.chosen>=0?`<div class="rrow"><span class="muted small">Your answer:</span> <span class="${b.is_correct?'text-success':'text-danger'} fw-semibold">${esc(b.options[b.chosen]||'')}</span></div>`:'<div class="rrow muted small"><em>Not answered</em></div>'}
+        ${!b.is_correct?`<div class="rrow"><span class="muted small">Correct:</span> <span class="fw-semibold" style="color:var(--neon-1)">${esc(b.options[b.correct]||'')}</span></div>`:''}
+        ${b.explanation?`<div class="rexpl mt-2"><strong>💡</strong> ${esc(b.explanation)}</div>`:''}
+      </div>`).join('');
+
+  } else if (type === 'truefalse') {
+    bd.innerHTML += res.breakdown.map((b, i) => `
+      <div class="glass p-4 mb-3 result-card ${b.is_correct?'rc-ok':'rc-bad'}">
+        <div class="d-flex justify-content-between align-items-start mb-2 flex-wrap gap-2">
+          <strong>Q${i+1}. ${esc(b.question)}</strong>
+          <span class="rbadge ${b.is_correct?'rb-ok':'rb-bad'}">${b.is_correct?'✓ Correct':'✗ Wrong'}</span>
+        </div>
+        <div class="rrow"><span class="muted small">Your answer:</span> <span class="fw-semibold">${esc(b.user_label)}</span></div>
+        ${!b.is_correct?`<div class="rrow"><span class="muted small">Correct:</span> <span class="fw-semibold" style="color:var(--neon-1)">${esc(b.correct_label)}</span></div>`:''}
+        ${b.explanation?`<div class="rexpl mt-2"><strong>💡</strong> ${esc(b.explanation)}</div>`:''}
+      </div>`).join('');
+
+  } else if (type === 'fillblank') {
+    bd.innerHTML += res.breakdown.map((b, i) => `
+      <div class="glass p-4 mb-3 result-card ${b.is_correct?'rc-ok':'rc-bad'}">
+        <div class="d-flex justify-content-between align-items-start mb-2 flex-wrap gap-2">
+          <strong>Q${i+1}. ${esc(b.question)}</strong>
+          <span class="rbadge ${b.is_correct?'rb-ok':'rb-bad'}">${b.is_correct?'✓ Correct':'✗ Wrong'}</span>
+        </div>
+        <div class="rrow"><span class="muted small">Your answer:</span> <span class="${b.is_correct?'text-success':'text-danger'} fw-semibold">${esc(b.user_answer)||'<em>blank</em>'}</span></div>
+        ${!b.is_correct?`<div class="rrow"><span class="muted small">Correct:</span> <span class="fw-semibold" style="color:var(--neon-1)">${esc(b.correct_answer)}</span></div>`:''}
+        ${b.explanation?`<div class="rexpl mt-2"><strong>💡</strong> ${esc(b.explanation)}</div>`:''}
+      </div>`).join('');
+
+  } else {
+    // short / long — AI scored
+    const results = res.results || [];
+    bd.innerHTML += results.map((r, i) => {
+      const q = currentQuestions[i] || {};
+      const scoreColor = r.score>=8?'#22c55e':r.score>=6?'#f59e0b':'#ef4444';
+      return `
+        <div class="glass p-4 mb-3 result-card ${r.is_correct?'rc-ok':'rc-bad'}">
+          <div class="d-flex justify-content-between align-items-start mb-2 flex-wrap gap-2">
+            <strong>Q${i+1}. ${esc(q.q||'')}</strong>
+            <span class="rbadge" style="background:${scoreColor}22;color:${scoreColor}">${r.score}/10</span>
+          </div>
+          <div class="rexpl mt-2"><strong>📝 Feedback:</strong> ${esc(r.feedback||'')}</div>
+          <details class="mt-2">
+            <summary class="muted small" style="cursor:pointer">Show model answer</summary>
+            <div class="rexpl mt-1">${esc(r.correct_answer||'')}</div>
+          </details>
+        </div>`;
+    }).join('');
+  }
+}
+
+function retakeTest() {
+  renderTest(currentQuestions, currentType);
+  showScreen('screenTest');
+}
+
+function esc(s) {
+  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+// postJson helper (may already be defined in base)
+if (typeof postJson === 'undefined') {
+  window.postJson = async function(url, data) {
+    const r = await fetch(url, {
+      method:'POST', headers:{'Content-Type':'application/json','X-CSRFToken': document.querySelector('[name=csrf_token]')?.value || ''},
+      body: JSON.stringify(data)
+    });
+    return r.json();
+  };
+}
+</script>
+
+<!-- Hidden CSRF for fetch -->
+<input type="hidden" name="csrf_token" value="{{ csrf_token() }}" id="csrf_token" style="display:none">
+
+<style>
+/* ── Mode cards ─────────── */
+.mode-card { cursor:pointer; border:2px solid transparent; border-radius:16px; transition:all .25s; }
+.mode-card:hover { border-color:var(--neon-1); box-shadow:0 0 28px rgba(124,92,255,.3); transform:translateY(-3px); }
+
+/* ── Summary tabs ───────── */
+.summary-tabs { display:flex; flex-wrap:wrap; gap:.4rem; }
+.stab {
+  padding:.45rem .9rem; border:1.5px solid var(--border); border-radius:10px;
+  background:transparent; color:var(--text-1); cursor:pointer; font-size:.82rem; font-weight:600;
+  transition:all .16s;
+}
+.stab:hover { border-color:var(--neon-1); }
+.stab.active { border-color:var(--neon-1); background:rgba(124,92,255,.2); color:var(--neon-1); }
+.sec-title { color:var(--neon-1); }
+.study-content { line-height:1.8; white-space:pre-wrap; font-size:.95rem; }
+
+/* ── Question type grid ─── */
+.qtype-grid { display:flex; flex-wrap:wrap; gap:.75rem; }
+.qtype-card {
+  flex:1; min-width:130px; padding:1rem; border:2px solid var(--border); border-radius:14px;
+  cursor:pointer; text-align:center; transition:all .2s;
+}
+.qtype-card:hover { border-color:var(--neon-1); }
+.qtype-card.active { border-color:var(--neon-1); background:rgba(124,92,255,.18); box-shadow:0 0 20px rgba(124,92,255,.3); }
+.qtype-icon { font-size:1.8rem; margin-bottom:.3rem; }
+.qtype-label { font-weight:700; font-size:.9rem; }
+.qtype-sub { font-size:.75rem; color:var(--text-2); margin-top:.15rem; }
+
+/* ── Count grid ─────────── */
+.count-grid { display:flex; flex-wrap:wrap; gap:.6rem; }
+.count-btn {
+  width:60px; height:60px; display:flex; align-items:center; justify-content:center;
+  border:2px solid var(--border); border-radius:12px; cursor:pointer;
+  font-size:1.1rem; font-weight:700; transition:all .18s;
+}
+.count-btn:hover { border-color:var(--neon-1); }
+.count-btn.active { border-color:var(--neon-1); background:rgba(124,92,255,.2); color:var(--neon-1); }
+
+/* ── Quiz question cards ── */
+.q-card { border-radius:14px; }
+.q-num { font-size:.75rem; font-weight:700; text-transform:uppercase; letter-spacing:.06em; color:var(--text-2); margin-bottom:.5rem; }
+.q-text { font-size:1.05rem; font-weight:600; line-height:1.55; }
+.q-opts { display:flex; flex-direction:column; gap:.45rem; }
+.q-opt {
+  display:flex; align-items:center; gap:.75rem; padding:.6rem .9rem;
+  border:1.5px solid var(--border); border-radius:10px; cursor:pointer; transition:all .16s; user-select:none;
+}
+.q-opt:hover { border-color:var(--neon-1); background:rgba(124,92,255,.08); }
+.q-opt.selected { border-color:var(--neon-1); background:rgba(124,92,255,.18); }
+.q-opt input { display:none; }
+.opt-mk {
+  width:28px; height:28px; border-radius:7px; background:var(--bg-2);
+  display:flex; align-items:center; justify-content:center;
+  font-weight:700; font-size:.8rem; flex-shrink:0; border:1px solid var(--border);
+}
+.q-opt.selected .opt-mk { background:var(--neon-1); color:#000; border-color:var(--neon-1); }
+.tf-btns { display:flex; gap:1rem; }
+.tf-btn {
+  flex:1; padding:.75rem; border:1.5px solid var(--border); border-radius:12px;
+  cursor:pointer; text-align:center; font-weight:600; transition:all .16s; user-select:none;
+}
+.tf-btn input { display:none; }
+.tf-btn:has(input:checked) { border-color:var(--neon-1); background:rgba(124,92,255,.18); }
+.tf-btn:hover { border-color:var(--neon-1); }
+.blank-marker { font-weight:700; color:var(--neon-1); border-bottom:2px dashed var(--neon-1); }
+.blank-input { margin-top:.5rem; }
+.key-points-hint { font-size:.82rem; color:var(--text-2); background:var(--bg-2); border-radius:8px; padding:.5rem .75rem; }
+.open-ans { resize:vertical; }
+
+/* ── Results ────────────── */
+.result-card { border-radius:14px; border-left:4px solid transparent; }
+.rc-ok { border-left-color:#22c55e; }
+.rc-bad { border-left-color:#ef4444; }
+.rbadge { font-size:.78rem; font-weight:700; padding:.2rem .6rem; border-radius:6px; }
+.rb-ok  { background:rgba(34,197,94,.18); color:#22c55e; }
+.rb-bad { background:rgba(239,68,68,.18); color:#ef4444; }
+.rrow { margin:.2rem 0; font-size:.92rem; }
+.rexpl { font-size:.87rem; color:var(--text-2); background:var(--bg-2); border-radius:8px; padding:.6rem 1rem; border-left:3px solid var(--neon-1); }
+</style>
+{% endblock %}

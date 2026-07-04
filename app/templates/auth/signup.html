@@ -1,0 +1,96 @@
+{% extends "_base.html" %}
+{% block title %}Sign up — OneHubAI{% endblock %}
+
+{% block body %}
+<div class="auth-wrap">
+  <div class="auth-card glass glass-strong">
+    <a class="brand mb-4" href="{{ url_for('main.landing') }}">
+      <span class="brand-mark"><img src="{{ url_for('static', filename='img/logo.png') }}" alt="OneHubAI Logo" class="brand-logo-img"></span>
+      <span class="brand-name">One<span>HubAI</span></span>
+    </a>
+    <h3 class="fw-bold mb-1">Create your workspace</h3>
+    <p class="muted mb-4">Free forever — bring your own keys.</p>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% for cat, msg in messages %}<div class="alert alert-{{ cat }}">{{ msg }}</div>{% endfor %}
+    {% endwith %}
+
+    <form method="POST" id="signupForm">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <div class="mb-3">
+        <label class="form-label">Full name</label>
+        <input class="form-control" name="name" placeholder="Arjun Kumar" required autofocus>
+      </div>
+      <div class="mb-3">
+        <label class="form-label">Email</label>
+        <input class="form-control" type="email" name="email" placeholder="you@example.com" required>
+      </div>
+      <div class="mb-3">
+        <label class="form-label">Password</label>
+        <input class="form-control" type="password" name="password" id="pw1" placeholder="6+ characters" required minlength="6">
+        <div class="mt-2" id="pwStrengthBar" style="height:4px;border-radius:2px;background:var(--border);overflow:hidden;display:none">
+          <div id="pwStrengthFill" style="height:100%;width:0;border-radius:2px;transition:width .3s,background .3s"></div>
+        </div>
+        <div id="pwStrengthLabel" class="muted" style="font-size:.78rem;margin-top:3px"></div>
+      </div>
+      <div class="mb-4">
+        <label class="form-label">Confirm password</label>
+        <input class="form-control" type="password" name="confirm_password" id="pw2" placeholder="Re-enter password" required minlength="6">
+        <div id="pwMatchMsg" style="font-size:.78rem;margin-top:3px"></div>
+      </div>
+      <div class="form-check mb-3">
+        <input class="form-check-input" type="checkbox" id="terms" required>
+        <label class="form-check-label muted" for="terms">I agree to the <a href="#" class="gradient-text">Terms</a> &amp; <a href="#" class="gradient-text">Privacy Policy</a></label>
+      </div>
+      <button class="btn btn-neon w-100 py-2 mb-3" id="signupBtn">Create account →</button>
+      <p class="text-center muted mb-0">Already have one? <a href="{{ url_for('auth.login') }}" class="gradient-text fw-bold text-decoration-none">Log in</a></p>
+    </form>
+  </div>
+</div>
+
+<script>
+const pw1 = document.getElementById('pw1');
+const pw2 = document.getElementById('pw2');
+const bar = document.getElementById('pwStrengthBar');
+const fill = document.getElementById('pwStrengthFill');
+const lbl = document.getElementById('pwStrengthLabel');
+const matchMsg = document.getElementById('pwMatchMsg');
+
+pw1.addEventListener('input', () => {
+  const v = pw1.value;
+  bar.style.display = v ? 'block' : 'none';
+  let s = 0;
+  if (v.length >= 6) s++;
+  if (v.length >= 10) s++;
+  if (/[A-Z]/.test(v)) s++;
+  if (/[0-9]/.test(v)) s++;
+  if (/[^A-Za-z0-9]/.test(v)) s++;
+  const colors = ['#ff5cf2','#f59e0b','#f59e0b','#34f5c5','#34f5c5'];
+  const labels = ['Too short','Weak','Fair','Good','Strong'];
+  fill.style.width = (s * 20) + '%';
+  fill.style.background = colors[Math.max(0,s-1)];
+  lbl.textContent = v ? labels[Math.max(0,s-1)] : '';
+  lbl.style.color = colors[Math.max(0,s-1)];
+});
+
+pw2.addEventListener('input', () => {
+  if (!pw2.value) { matchMsg.textContent = ''; return; }
+  if (pw1.value === pw2.value) {
+    matchMsg.textContent = '✓ Passwords match';
+    matchMsg.style.color = '#34f5c5';
+  } else {
+    matchMsg.textContent = '✗ Passwords do not match';
+    matchMsg.style.color = '#ff5cf2';
+  }
+});
+
+document.getElementById('signupForm').addEventListener('submit', (e) => {
+  if (pw1.value !== pw2.value) {
+    e.preventDefault();
+    matchMsg.textContent = '✗ Passwords do not match';
+    matchMsg.style.color = '#ff5cf2';
+    pw2.focus();
+  }
+});
+</script>
+{% endblock %}

@@ -1,0 +1,153 @@
+{% extends "_base_app.html" %}
+{% set active_module = 'interview' %}
+{% block title %}AI Interview — OneHubAI{% endblock %}
+
+{% block content %}
+<div class="d-flex flex-wrap align-items-center justify-content-between mb-4">
+  <div>
+    <h2 class="fw-bold mb-1">AI <span class="gradient-text">Interview Coach</span></h2>
+    <p class="muted mb-0">AI speaks questions, you speak answers. Get scored at the end.</p>
+  </div>
+</div>
+
+<!-- Mode Cards -->
+<div class="row g-3 mb-4">
+  {% set modes = [
+  ('standard','','Standard Interview','HR, behavioural & technical. Perfect for freshers and job-seekers.','neon-1'),
+  ('tough','','Tough Interview','Stress-based questions, cross-examination and difficult follow-ups.','neon-3'),
+  ('shark','','Shark Tank Mode','Pitch your idea to AI investors. Revenue, market, scaling & funding.','neon-2'),
+] %}
+  {% for key, icon, label, desc, col in modes %}
+  <div class="col-md-4">
+    <div class="feature-card mode-select-card {% if loop.first %}selected-mode{% endif %}" data-mode="{{ key }}" onclick="selectMode(this,'{{ key }}')">
+      <div class="ic mb-2" style="width:52px;height:52px;font-size:1.6rem;">{{ icon }}</div>
+      <h5 class="fw-bold mb-1">{{ label }}</h5>
+      <p class="muted small mb-0">{{ desc }}</p>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+
+<!-- Setup Form -->
+<div class="glass p-4 mb-4">
+  <h5 class="fw-bold mb-3"> Setup Your Session</h5>
+  <form action="{{ url_for('interview.start') }}" method="POST" enctype="multipart/form-data">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <input type="hidden" name="type" id="selectedModeInput" value="standard">
+
+    <div class="row g-3 mb-3">
+      <div class="col-md-6">
+        <label class="form-label fw-semibold">Target Role / Position <span style="color:#e74c3c">*</span></label>
+        <input class="form-control" name="role" placeholder="e.g. Senior Frontend Engineer, Product Manager" required>
+      </div>
+      <div class="col-md-6">
+        <label class="form-label fw-semibold">Background / Degree</label>
+        <select class="form-select" name="background">
+          <option value="">— Select your background —</option>
+          <optgroup label="Engineering">
+            <option value="Computer Science Engineering">Computer Science Engineering</option>
+            <option value="Information Technology">Information Technology</option>
+            <option value="Electronics Engineering">Electronics Engineering</option>
+            <option value="Mechanical Engineering">Mechanical Engineering</option>
+            <option value="Civil Engineering">Civil Engineering</option>
+            <option value="Chemical Engineering">Chemical Engineering</option>
+          </optgroup>
+          <optgroup label="Management">
+            <option value="MBA (Finance)">MBA (Finance)</option>
+            <option value="MBA (Marketing)">MBA (Marketing)</option>
+            <option value="MBA (HR)">MBA (HR)</option>
+            <option value="BBA">BBA</option>
+            <option value="BBA">BCA</option>
+          </optgroup>
+          <optgroup label="Science">
+            <option value="BSc Computer Science">BSc Computer Science</option>
+            <option value="BSc Mathematics">BSc Mathematics</option>
+            <option value="BSc Physics">BSc Physics</option>
+            <option value="MSc Data Science">MSc Data Science</option>
+          </optgroup>
+          <optgroup label="Other">
+            <option value="Medical (MBBS/BDS)">Medical (MBBS/BDS)</option>
+            <option value="Law (LLB/LLM)">Law (LLB/LLM)</option>
+            <option value="Commerce (BCom/MCom)">Commerce (BCom/MCom)</option>
+            <option value="Arts / Humanities">Arts / Humanities</option>
+            <option value="Self-Taught / Bootcamp">Self-Taught / Bootcamp</option>
+            <option value="Other">Other</option>
+          </optgroup>
+        </select>
+      </div>
+    </div>
+
+    <div class="row g-3 mb-3">
+      <div class="col-md-6">
+        <label class="form-label fw-semibold">School / College / University / Industry</label>
+        <input class="form-control" name="school" placeholder="e.g. IIT Bombay, BITS Pilani, Local College…">
+      </div>
+      <div class="col-md-6">
+        <label class="form-label fw-semibold">Graduation Year</label>
+        <select class="form-select" name="grad_year">
+          <option value="">— Select year —</option>
+          {% for yr in range(2030, 2014, -1) %}
+          <option value="{{ yr }}">{{ yr }}</option>
+          {% endfor %}
+        </select>
+      </div>
+    </div>
+
+    <div class="mb-3">
+      <label class="form-label fw-semibold">Key Skills <span class="muted small">(separate by commas)</span></label>
+      <input class="form-control" name="skills" placeholder="e.g. Python, React, Machine Learning, Communication, SQL, Leadership…">
+    </div>
+
+    <div class="mb-3">
+      <label class="form-label fw-semibold">Resume (PDF / DOCX — optional)</label>
+      <input class="form-control" type="file" name="resume" accept=".pdf,.docx,.txt">
+      <div class="muted small mt-1">Upload your resume</div>
+    </div>
+
+    <button class="btn btn-neon mt-2 w-100 py-3">Start AI Interview Session</button>
+  </form>
+</div>
+
+<!-- Past Sessions -->
+<div class="glass p-4">
+  <h5 class="fw-bold mb-3"> Past Sessions</h5>
+  {% if sessions %}
+    <div class="row g-2">
+    {% for s in sessions %}
+    <div class="col-md-6">
+      <a href="{{ url_for('interview.session', sid=s.id) }}" class="list-row text-decoration-none">
+        <div>
+          <strong>{{ s.role }}</strong>
+          <div class="muted small">
+            {% if s.interview_type=='standard' %}🎯{% elif s.interview_type=='tough' %}⚡{% else %}🦈{% endif %}
+            {{ s.interview_type|title }} · {{ s.created_at.strftime('%b %d, %Y') }}
+          </div>
+        </div>
+        {% if s.report %}
+          <span class="chip neon">Score: {{ s.report.overall }}/100</span>
+        {% else %}
+          <span class="chip">In Progress</span>
+        {% endif %}
+      </a>
+    </div>
+    {% endfor %}
+    </div>
+  {% else %}
+    <p class="muted small mb-0">Your interview sessions will appear here.</p>
+  {% endif %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function selectMode(el, mode) {
+  document.querySelectorAll('.mode-select-card').forEach(c => c.classList.remove('selected-mode'));
+  el.classList.add('selected-mode');
+  document.getElementById('selectedModeInput').value = mode;
+}
+</script>
+<style>
+.mode-select-card { cursor: pointer; border: 2px solid transparent; }
+.mode-select-card.selected-mode { border-color: var(--neon-1); box-shadow: 0 0 24px rgba(124,92,255,.35); }
+</style>
+{% endblock %}

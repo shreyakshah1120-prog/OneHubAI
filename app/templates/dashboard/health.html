@@ -1,0 +1,229 @@
+{% extends "_base_app.html" %}
+{% set active_module = 'health' %}
+{% block title %}Health AI - OneHubAI{% endblock %}
+
+{% block head_extra %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/health.css') }}">
+{% endblock %}
+
+{% block content %}
+<div
+  id="healthApp"
+  class="health-app"
+  data-language="{{ language_code }}"
+  data-language-label="{{ language_name }}"
+  data-language-missing="{{ '1' if language_missing else '0' }}"
+  data-url-language="{{ url_for('health.save_language') }}"
+  data-url-profile="{{ url_for('health.profile_metrics') }}"
+  data-url-part="{{ url_for('health.part') }}"
+  data-url-start="{{ url_for('health.consult_start') }}"
+  data-url-message="{{ url_for('health.consult_message') }}"
+  data-url-report-template="{{ url_for('health.report_detail', report_id=0) }}"
+  data-url-delete-template="{{ url_for('health.report_delete', report_id=0) }}"
+  data-url-pdf-template="{{ url_for('health.report_pdf', report_id=0) }}"
+>
+  <section class="health-hero">
+    <div>
+      <p class="health-kicker" data-i18n="kicker">Medical AI Assistant</p>
+      <h1 data-i18n="title">Health</h1>
+      <p class="health-subtitle" data-i18n="subtitle">Explore your body, describe symptoms naturally, and get careful triage guidance. This is not a diagnosis.</p>
+    </div>
+    <div class="health-language-pill">
+      <span data-i18n="language">Language</span>
+      <strong id="languageLabel">{{ language_name }}</strong>
+      <button class="health-icon-btn" type="button" id="changeLanguageBtn" title="Change language">A</button>
+    </div>
+  </section>
+
+  <section class="health-dashboard" aria-label="Health dashboard">
+    <article class="health-stat">
+      <span class="stat-icon">Hi</span>
+      <small data-i18n="greeting">Greeting</small>
+      <strong id="greetingText">Hello, {{ current_user.name.split()[0] }}</strong>
+    </article>
+    <article class="health-stat">
+      <span class="stat-icon">BMI</span>
+      <small data-i18n="bmi">BMI</small>
+      <strong id="dashBmi">--</strong>
+    </article>
+    <article class="health-stat">
+      <span class="stat-icon">Rx</span>
+      <small data-i18n="previousReports">Previous Reports</small>
+      <strong>{{ reports|length }}</strong>
+    </article>
+    <article class="health-stat">
+      <span class="stat-icon">BP</span>
+      <small data-i18n="selectedBodyPart">Selected Body Part</small>
+      <strong id="dashPart">None</strong>
+    </article>
+    <article class="health-stat">
+      <span class="stat-icon">HS</span>
+      <small data-i18n="healthScore">Health Score</small>
+      <strong id="healthScore">--</strong>
+    </article>
+  </section>
+
+  <section class="health-layout">
+    <div class="health-left">
+      <article class="health-panel">
+        <div class="panel-head">
+          <div>
+            <h2 data-i18n="profileTitle">Health Profile</h2>
+            <p data-i18n="profileSubtitle">Personal metrics help make triage context-aware.</p>
+          </div>
+        </div>
+        <form id="healthProfileForm" class="profile-grid">
+          <label>
+            <span data-i18n="age">Age</span>
+            <input id="hpAge" type="number" min="1" max="120" placeholder="28">
+          </label>
+          <label>
+            <span data-i18n="gender">Gender</span>
+            <select id="hpGender">
+              <option value="female" data-i18n="female">Female</option>
+              <option value="male" data-i18n="male">Male</option>
+            </select>
+          </label>
+          <label>
+            <span data-i18n="height">Height (cm)</span>
+            <input id="hpHeight" type="number" min="40" max="250" step="0.1" placeholder="165">
+          </label>
+          <label>
+            <span data-i18n="weight">Weight (kg)</span>
+            <input id="hpWeight" type="number" min="2" max="300" step="0.1" placeholder="60">
+          </label>
+          <label class="wide">
+            <span data-i18n="conditions">Medical Conditions (optional)</span>
+            <input id="hpConditions" type="text" placeholder="Diabetes, asthma, BP...">
+          </label>
+          <label class="wide">
+            <span data-i18n="allergies">Allergies (optional)</span>
+            <input id="hpAllergies" type="text" placeholder="Penicillin, peanuts...">
+          </label>
+        </form>
+        <div class="metric-grid">
+          <div><small data-i18n="healthyWeight">Healthy Weight</small><strong id="metricWeight">--</strong></div>
+          <div><small data-i18n="water">Daily Water</small><strong id="metricWater">--</strong></div>
+          <div><small data-i18n="calories">Daily Calories</small><strong id="metricCalories">--</strong></div>
+        </div>
+      </article>
+
+      <article class="health-panel anatomy-panel">
+        <div class="panel-head">
+          <div>
+            <h2 data-i18n="anatomyTitle">Human Anatomy</h2>
+            <p data-i18n="anatomySubtitle">Tap a label and let Dr. AI tell what's the problem.</p>
+          </div>
+          <div class="segmented">
+            <button type="button" class="active" data-view="external" data-i18n="external">External</button>
+            <button type="button" data-view="internal" data-i18n="internal">Internal</button>
+          </div>
+        </div>
+        <div class="anatomy-stage" id="anatomyStage">
+          <img id="anatomyBgExternal" src="{{ url_for('static', filename='images/body-external.jpg') }}" class="anatomy-bg" alt="External body diagram">
+          <img id="anatomyBgInternal" src="{{ url_for('static', filename='images/body-internal.jpg') }}" class="anatomy-bg" alt="Internal organ diagram" hidden>
+          <svg class="anatomy-lines" id="anatomyLines" aria-hidden="true"></svg>
+          <div id="anatomyHotspots" class="anatomy-hotspots" aria-label="Interactive body map"></div>
+        </div>
+        <div class="quick-parts" id="quickParts">
+          {% for p in external_parts %}
+          <button type="button" data-part="{{ p }}" data-view="external">{{ p }}</button>
+          {% endfor %}
+          {% for p in internal_parts %}
+          <button type="button" data-part="{{ p }}" data-view="internal" hidden>{{ p }}</button>
+          {% endfor %}
+        </div>
+      </article>
+    </div>
+
+    <div class="health-right">
+      <article class="health-panel selected-panel">
+        <div class="selected-head">
+          <div>
+            <small data-i18n="selected">Selected</small>
+            <h2 id="selectedPartTitle">No body part selected</h2>
+          </div>
+          <button type="button" id="startConsultBtn" class="health-primary" disabled data-i18n="reportProblem">Report a problem with this</button>
+        </div>
+      </article>
+
+      <article class="health-panel consult-panel">
+        <div class="panel-head">
+          <div>
+            <h2 data-i18n="consultTitle">Doctor Consultation</h2>
+            <p data-i18n="consultSubtitle">One question at a time, based on your answers.</p>
+          </div>
+        </div>
+        <div id="emergencyBanner" class="emergency-banner" hidden></div>
+        <div id="chatLog" class="chat-log">
+          <div class="assistant-msg" data-i18n="consultEmpty">Start consultation with Dr.AI</div>
+        </div>
+        <form id="consultForm" class="consult-form">
+          <textarea id="consultAnswer" rows="2" placeholder="Describe your problem..." disabled></textarea>
+          <label class="upload-chip">
+            <input id="reportUpload" type="file" accept=".pdf,.jpg,.jpeg,.png,.webp,.docx,.txt">
+            <span data-i18n="uploadReport">Upload report</span>
+          </label>
+          <button type="submit" class="health-primary" disabled data-i18n="send">Send</button>
+          <button type="button" id="finishNowBtn" class="health-secondary" disabled data-i18n="finish">Generate report</button>
+        </form>
+      </article>
+    </div>
+  </section>
+
+  <section class="health-panel report-panel" id="reportPanel" hidden>
+    <div class="panel-head">
+      <div>
+        <h2 data-i18n="aiReport">AI Report</h2>
+        <p data-i18n="reportSubtitle">Structured triage summary rendered as cards.</p>
+      </div>
+    </div>
+    <div id="reportCards" class="report-cards"></div>
+  </section>
+
+  <section class="health-panel history-panel">
+    <div class="panel-head">
+      <div>
+        <h2 data-i18n="history">History</h2>
+        <p data-i18n="historySubtitle">Open, delete, or download previous consultations.</p>
+      </div>
+    </div>
+    <div class="history-list" id="historyList">
+      {% if reports %}
+        {% for report in reports %}
+        <div class="history-item" data-report-id="{{ report.id }}">
+          <div>
+            <strong>{{ report.organ }}</strong>
+            <p>{{ report.summary }}</p>
+            <small>{{ report.urgency }} - {{ report.confidence }}</small>
+          </div>
+          <div class="history-actions">
+            <button type="button" data-action="open" data-id="{{ report.id }}" data-i18n="open">Open</button>
+            <a href="{{ url_for('health.report_pdf', report_id=report.id) }}" data-i18n="downloadPdf">Download PDF</a>
+            <button type="button" data-action="delete" data-id="{{ report.id }}" data-i18n="delete">Delete</button>
+          </div>
+        </div>
+        {% endfor %}
+      {% else %}
+        <p class="muted-box" data-i18n="emptyHistory">Your health reports will appear here.</p>
+      {% endif %}
+    </div>
+  </section>
+</div>
+
+<div class="language-modal" id="languageModal" hidden>
+  <div class="language-card">
+    <h2 data-i18n="chooseLanguage">Choose Language</h2>
+    <p data-i18n="chooseLanguageSub">This will translate the Health module and AI responses.</p>
+    <div class="language-options">
+      <button type="button" data-language="en">English</button>
+      <button type="button" data-language="hi">Hindi</button>
+      <button type="button" data-language="gu">Gujarati</button>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/health.js') }}"></script>
+{% endblock %}

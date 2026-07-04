@@ -1,0 +1,90 @@
+{% extends "_base_app.html" %}
+{% set active_module = 'interview' %}
+{% block title %}Interview Report — {{ s.role }}{% endblock %}
+
+{% block content %}
+<div class="d-flex flex-wrap align-items-center justify-content-between mb-4">
+  <div>
+    <h2 class="fw-bold mb-1">📊 Interview Report</h2>
+    <p class="muted mb-0">{{ s.role }} · {{ s.interview_type|title }} · {{ s.created_at.strftime('%b %d, %Y') }}</p>
+  </div>
+  <a href="{{ url_for('interview.index') }}" class="btn btn-ghost">← Back</a>
+</div>
+
+{% if rd %}
+<!-- Score cards -->
+<div class="row g-3 mb-4">
+  {% set score_cards = [
+    ('', 'Communication', rd.get('communication', 7)),
+    ('', 'English Fluency', rd.get('english_fluency', 7)),
+    ('', 'Domain Knowledge', rd.get('knowledge_domain', 7)),
+    ('', 'Preparation', rd.get('preparation', 7)),
+    ('', 'Confidence', rd.get('confidence', 7)),
+  ] %}
+  {% for icon, label, score in score_cards %}
+  <div class="col-6 col-md-4 col-lg-2-4">
+    <div class="glass p-3 text-center">
+      <div style="font-size:1.5rem;">{{ icon }}</div>
+      <div class="muted small mt-1">{{ label }}</div>
+      <div class="fw-bold mt-1" style="font-size:1.6rem;color:{% if score >= 8 %}#27ae60{% elif score >= 6 %}#D4AF37{% else %}#e74c3c{% endif %};">
+        {{ score }}<span class="muted" style="font-size:.9rem;">/10</span>
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+  <div class="col-6 col-md-4 col-lg-2-4">
+    <div class="glass p-3 text-center" style="border-color:rgba(212,175,55,0.5);">
+      <div style="font-size:1.5rem;">⭐</div>
+      <div class="muted small mt-1">Overall</div>
+      <div class="fw-bold mt-1" style="font-size:2rem;color:#D4AF37;">
+        {{ rd.get('overall', 7) }}<span class="muted" style="font-size:.9rem;">/10</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Feedback -->
+<div class="glass p-4 mb-4">
+  <h5 class="fw-bold mb-3">Overall Feedback</h5>
+  <p style="line-height:1.8;">{{ rd.get('feedback', 'Good effort. Keep practising.') }}</p>
+</div>
+
+<div class="row g-3 mb-4">
+  {% if rd.get('weak_points') %}
+  <div class="col-md-4">
+    <div class="glass p-4 h-100">
+      <h6 class="fw-bold mb-2">Areas to Improve</h6>
+      <p class="muted small mb-0" style="line-height:1.7;">{{ rd.get('weak_points') }}</p>
+    </div>
+  </div>
+  {% endif %}
+  {% if rd.get('missing_skills') %}
+  <div class="col-md-4">
+    <div class="glass p-4 h-100">
+      <h6 class="fw-bold mb-2">Missing Skills</h6>
+      <p class="muted small mb-0" style="line-height:1.7;">{{ rd.get('missing_skills') }}</p>
+    </div>
+  </div>
+  {% endif %}
+  {% if rd.get('ats_suggestions') %}
+  <div class="col-md-4">
+    <div class="glass p-4 h-100">
+      <h6 class="fw-bold mb-2">Resume Tips</h6>
+      <p class="muted small mb-0" style="line-height:1.7;">{{ rd.get('ats_suggestions') }}</p>
+    </div>
+  </div>
+  {% endif %}
+</div>
+
+{% else %}
+<div class="glass p-4 text-center muted">
+  <p>Report data could not be loaded. Please try regenerating.</p>
+  <a href="{{ url_for('interview.session', sid=s.id) }}" class="btn btn-ghost">← Back to Session</a>
+</div>
+{% endif %}
+
+<div class="d-flex gap-3 mt-2">
+  <a href="{{ url_for('interview.session', sid=s.id) }}" class="btn btn-ghost">← View Session</a>
+  <a href="{{ url_for('interview.index') }}" class="btn btn-neon">Practice Again</a>
+</div>
+{% endblock %}

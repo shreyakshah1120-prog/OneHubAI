@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 640" role="img" aria-label="Human body outline">
+  <defs>
+    <linearGradient id="skin" x1="0" x2="1">
+      <stop offset="0" stop-color="#8ee7d7"/>
+      <stop offset="1" stop-color="#75a7ff"/>
+    </linearGradient>
+    <linearGradient id="organ" x1="0" x2="1">
+      <stop offset="0" stop-color="#ff7a90"/>
+      <stop offset="1" stop-color="#ffd166"/>
+    </linearGradient>
+    <filter id="glow" x="-40%" y="-40%" width="180%" height="180%">
+      <feGaussianBlur stdDeviation="6" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+  <rect width="360" height="640" rx="28" fill="#071013"/>
+  <path d="M180 36c38 0 68 31 68 69s-30 69-68 69-68-31-68-69 30-69 68-69Z" fill="url(#skin)" opacity=".78"/>
+  <path d="M138 178h84c24 0 45 18 49 42l18 103 43 118c5 15-2 30-17 36-15 6-31-2-37-17l-51-130-9 98 28 152c3 17-8 33-25 36-16 3-32-8-35-25l-28-142-28 142c-3 17-19 28-35 25-17-3-28-19-25-36l28-152-9-98-51 130c-6 15-22 23-37 17s-22-21-17-36l43-118 18-103c4-24 25-42 49-42Z" fill="url(#skin)" opacity=".68"/>
+  <path d="M154 196h52c18 0 34 14 37 32l17 103-23 95H123l-23-95 17-103c3-18 19-32 37-32Z" fill="#dff9ff" opacity=".12"/>
+  <path d="M181 198c-8 19-22 34-22 53 0 22 15 37 21 49 7-14 23-28 23-50 0-20-14-34-22-52Z" fill="url(#organ)" filter="url(#glow)" opacity=".92"/>
+  <path d="M152 238c-19 9-31 27-31 51 0 20 8 38 21 49 17-19 24-46 10-100Z" fill="#ff8fb3" opacity=".76"/>
+  <path d="M208 238c19 9 31 27 31 51 0 20-8 38-21 49-17-19-24-46-10-100Z" fill="#ff8fb3" opacity=".76"/>
+  <path d="M161 331h38c15 0 26 12 26 26v36c0 17-13 31-30 31h-30c-17 0-30-14-30-31v-36c0-14 11-26 26-26Z" fill="#ffd166" opacity=".7"/>
+  <path d="M180 185v252" stroke="#ffffff" stroke-width="6" stroke-linecap="round" opacity=".28"/>
+  <circle cx="158" cy="282" r="12" fill="#70e1b8" opacity=".8"/>
+  <circle cx="202" cy="282" r="12" fill="#70e1b8" opacity=".8"/>
+  <path d="M142 94c11-18 65-18 76 0M151 116h58" fill="none" stroke="#071013" stroke-width="8" stroke-linecap="round" opacity=".38"/>
+  <text x="180" y="614" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="13" fill="#b8d6dc">Tap highlighted regions</text>
+</svg>
