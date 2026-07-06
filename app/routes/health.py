@@ -208,52 +208,59 @@ def consult_message():
     if not answer and not request.files.get("report"):
         return jsonify({"ok": False, "error": "Please describe what you are feeling."}), 400
 
-    uploaded = _handle_upload(request.files.get("report"), consult)
-    if answer:
-        consult["transcript"].append({"answer": answer, "time": datetime.utcnow().isoformat()})
+    try:
+        uploaded = _handle_upload(request.files.get("report"), consult)
+        if answer:
+            consult["transcript"].append({"answer": answer, "time": datetime.utcnow().isoformat()})
 
-    emergency = detect_emergency(consult["organ"], consult["transcript"], _language_name())
-    enough = force_report or emergency.get("is_emergency") or len(consult["transcript"]) >= 5
+        emergency = detect_emergency(consult["organ"], consult["transcript"], _language_name())
+        enough = force_report or emergency.get("is_emergency") or len(consult["transcript"]) >= 5
 
-    if not enough:
-        q_res = generate_followup_questions(
+        if not enough:
+            q_res = generate_followup_questions(
+                consult["organ"],
+                consult["profile"],
+                consult["transcript"],
+                consult["asked"],
+                _language_name(),
+            )
+            question = q_res["data"]
+            consult["asked"].append(question)
+            session.modified = True
+            return jsonify({
+                "ok": True,
+                "done": False,
+                "question": question,
+                "emergency": emergency,
+                "uploaded": uploaded,
+            })
+
+        report_res = generate_health_report(
             consult["organ"],
             consult["profile"],
             consult["transcript"],
-            consult["asked"],
+            _read_report_text(consult),
             _language_name(),
+            emergency,
         )
-        question = q_res["data"]
-        consult["asked"].append(question)
+        report = report_res["data"]
+        saved = _save_report(consult, report)
+        consultations.pop(cid, None)
         session.modified = True
         return jsonify({
             "ok": True,
-            "done": False,
-            "question": question,
+            "done": True,
+            "report": report,
+            "report_id": saved.id,
             "emergency": emergency,
             "uploaded": uploaded,
         })
-
-    report_res = generate_health_report(
-        consult["organ"],
-        consult["profile"],
-        consult["transcript"],
-        _read_report_text(consult),
-        _language_name(),
-        emergency,
-    )
-    report = report_res["data"]
-    saved = _save_report(consult, report)
-    consultations.pop(cid, None)
-    session.modified = True
-    return jsonify({
-        "ok": True,
-        "done": True,
-        "report": report,
-        "report_id": saved.id,
-        "emergency": emergency,
-        "uploaded": uploaded,
-    })
+    except Exception as e:
+        current_app.logger.exception(e)
+        return jsonify({
+            "ok": False,
+            "error": "The AI took too long or hit an error. Please try again — your progress in this consultation is still saved.",
+        }), 500
 
 
 @bp.route("/report/<int:report_id>")

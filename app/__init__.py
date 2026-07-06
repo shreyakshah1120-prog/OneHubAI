@@ -4,7 +4,7 @@ from datetime import datetime
 from pathlib import Path
 
 from dotenv import load_dotenv
-from flask import Flask
+from flask import Flask, jsonify, request
 from flask_login import LoginManager
 from flask_wtf.csrf import CSRFProtect
 from flask_limiter import Limiter
@@ -94,6 +94,33 @@ def create_app() -> Flask:
             "current_year": datetime.utcnow().year,
             "brand_name": "OneHubAI",
         }
+
+    def _looks_like_api_request() -> bool:
+        # Our fetch()-based JS calls always POST JSON or multipart form data;
+        # normal page navigations are GET requests for HTML. This lets us
+        # tell the two apart so crashes never hand a fetch() call raw HTML.
+        content_type = (request.content_type or "")
+        return request.method != "GET" and (
+            request.is_json
+            or content_type.startswith("multipart/form-data")
+            or content_type.startswith("application/x-www-form-urlencoded")
+        )
+
+    @app.errorhandler(Exception)
+    def handle_any_error(err):
+        from werkzeug.exceptions import HTTPException
+        if isinstance(err, HTTPException):
+            code = err.code or 500
+            message = err.description or "Request failed."
+        else:
+            code = 500
+            message = "Something went wrong on our end. Please try again in a moment."
+            app.logger.exception(err)
+        if _looks_like_api_request():
+            return jsonify({"ok": False, "error": message}), code
+        if isinstance(err, HTTPException):
+            return err
+        raise err
 
     with app.app_context():
         db.create_all()

@@ -96,7 +96,7 @@ def chat_gemini(prompt: str, model: str = "gemini-1.5-flash") -> dict:
     for m_name in models_to_try:
         try:
             m = genai.GenerativeModel(m_name)
-            res = m.generate_content(prompt)
+            res = m.generate_content(prompt, request_options={"timeout": 25})
             return {
                 "ok": True,
                 "data": res.text,
@@ -118,7 +118,7 @@ def chat_pollinations(prompt: str) -> dict:
                     {"role": "user", "content": prompt}
                 ]
             },
-            timeout=120,
+            timeout=75,
         )
 
         if resp.status_code != 200:
@@ -235,7 +235,7 @@ def describe_uploaded_image(image_path: str, user_prompt: str = "") -> str:
         )
         if user_prompt:
             instruction += f" The user's question/request about this image is: {user_prompt}"
-        res = model.generate_content([instruction, image_file])
+        res = model.generate_content([instruction, image_file], request_options={"timeout": 45})
         return res.text
     except Exception as e:
         return f"[Image uploaded, but analysis failed: {e}]"
@@ -425,11 +425,24 @@ def generate_health_report(
     fallback = {
         "selected_organ": body_part,
         "overview": "This is an initial triage summary based on your answers. It is not a diagnosis.",
-        "possible_causes": ["This is NOT a diagnosis.", "Minor strain, irritation, infection, inflammation, or another medical cause may be possible depending on examination."],
+        "what_is_happening": "Based on what you described, your body may be responding to irritation, strain, infection, or inflammation in this area. A qualified doctor can confirm the exact cause after an examination.",
+        "possible_causes": [
+            "This is NOT a diagnosis.",
+            "Minor strain or irritation — common and usually resolves with rest and care.",
+            "Infection or inflammation — possible if symptoms include redness, warmth, fever, or discharge.",
+            "An underlying condition that needs a doctor's examination to rule in or out.",
+        ],
+        "severity_reasoning": "This urgency level is based on the symptoms you described and how long they've lasted. It may change if new symptoms appear.",
         "home_remedies": ["Hydration", "Rest", "Balanced diet", "Gentle movement if comfortable", "Stress reduction"],
-        "lifestyle_advice": ["Track symptoms", "Avoid triggers", "Sleep well", "Avoid unsafe self-medication"],
-        "when_to_see_doctor": ["See a doctor if symptoms persist, worsen, recur, or affect daily activities."],
+        "lifestyle_advice": ["Track symptoms daily", "Avoid known triggers", "Sleep 7-8 hours", "Avoid unsafe self-medication"],
+        "when_to_see_doctor": ["See a doctor within 24-48 hours if symptoms persist or worsen.", "See a doctor immediately if new severe symptoms appear."],
         "emergency_warning_signs": ["Severe pain", "Breathing trouble", "Fainting", "Weakness", "Confusion", "Heavy bleeding"],
+        "follow_up_plan": "Recheck in 2-3 days. If there is no improvement, or symptoms worsen, book a doctor's appointment.",
+        "questions_to_ask_doctor": [
+            "What is the most likely cause of my symptoms?",
+            "Do I need any tests to confirm this?",
+            "What treatment do you recommend, and how soon should I expect improvement?",
+        ],
         "uploaded_report_cross_check": "No uploaded report was available to cross-check.",
         "urgency": "Routine",
         "confidence": "Moderate",
@@ -441,26 +454,41 @@ def generate_health_report(
 
     prompt = f"""
 Respond completely in {language}.
-You are NOT diagnosing. You are performing initial medical triage.
-Always explain uncertainty. Never claim certainty.
-Mention emergency signs, safe home remedies, when to see a doctor, and a clear disclaimer.
-Never prescribe medicines. Include: Consult your doctor before taking medication. Some commonly used over-the-counter medicines may help depending on the condition.
+You are Dr. AI — an experienced, compassionate physician giving a patient a thorough
+initial triage report after a consultation, the way a real doctor would explain things
+in person: clear, specific, and reassuring, never vague or generic.
 
-Return ONLY valid JSON with these keys:
-selected_organ, overview, possible_causes, home_remedies, lifestyle_advice,
-when_to_see_doctor, emergency_warning_signs, uploaded_report_cross_check,
-urgency, confidence, disclaimer.
+Ground every section in the patient's actual answers below — reference specific details
+they mentioned (symptom, duration, severity, triggers) rather than generic statements.
+You are NOT diagnosing. Always explain uncertainty. Never claim certainty.
+Never prescribe medicines by name or dose. You may mention categories of commonly used
+over-the-counter options (e.g. "a paracetamol-based pain reliever") but must always add
+"consult your doctor or pharmacist before taking any medication."
 
-Possible causes must clearly include: This is NOT a diagnosis.
-If a report is uploaded, say either "The uploaded report supports..." or
-"The uploaded report does not clearly support..." based on the report text.
+Return ONLY valid JSON with exactly these keys:
 
-Selected organ: {body_part}
+- selected_organ: string
+- overview: 2-3 sentences summarizing the consultation and the leading impression, in warm plain language.
+- what_is_happening: a detailed (4-6 sentence) doctor-style explanation of what is likely going on physiologically, referencing the patient's specific symptoms.
+- possible_causes: a list of 3-5 possible causes, ORDERED from most to least likely, each written as "Cause — why this fits what you described".
+- severity_reasoning: 2-3 sentences explaining exactly why this urgency level was chosen, referencing specific red flags present or absent.
+- home_remedies: a list of 4-6 specific, actionable self-care steps (not generic — tailored to {body_part} and the symptoms described).
+- lifestyle_advice: a list of 3-5 tailored lifestyle recommendations.
+- when_to_see_doctor: a list of 3-4 specific, timed triggers (e.g. "if pain exceeds 7/10", "if fever crosses 101°F for more than 2 days").
+- emergency_warning_signs: a list of specific red-flag symptoms that mean "go to the ER now".
+- follow_up_plan: 1-2 sentences giving a concrete recheck timeline (e.g. "Recheck in 48 hours; if X hasn't improved, book an in-person visit").
+- questions_to_ask_doctor: a list of 3-4 smart, specific questions the patient should bring to their real doctor's appointment.
+- uploaded_report_cross_check: if a report/image was uploaded, state clearly whether it supports or doesn't support the leading impression, and why. If none was uploaded, say so plainly.
+- urgency: one of "Routine", "Soon", "Urgent", "Emergency".
+- confidence: one of "Low", "Moderate", "High" — how confident this triage impression is given the information available.
+- disclaimer: a clear one-sentence disclaimer that this is not a diagnosis.
+
 Patient profile JSON: {json.dumps(profile)}
 Consultation transcript JSON: {json.dumps(transcript)}
 Emergency detection JSON: {json.dumps(emergency)}
 Uploaded report or image findings:
 {report_text or "[no report uploaded]"}
+Body part: {body_part}
 """
     return _json_prompt(prompt, fallback)
 
@@ -487,7 +515,7 @@ def analyze_medical_image(image_path: str, body_part: str = "General", language:
             f"Extract visible medical findings from this uploaded report/image related to {body_part}. "
             "Mention uncertainty and do not prescribe medicine."
         )
-        res = model.generate_content([prompt, image_file])
+        res = model.generate_content([prompt, image_file], request_options={"timeout": 45})
         return {"ok": True, "data": res.text, "provider": "gemini-vision", "error": None}
     except Exception as e:
         return {"ok": False, "data": f"Image uploaded, but visual analysis failed: {e}", "provider": "gemini-vision", "error": str(e)}

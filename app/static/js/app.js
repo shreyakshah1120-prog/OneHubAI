@@ -33,27 +33,56 @@ function spawnParticles(count) {
   }
 }
 
+async function safeJson(res) {
+  const contentType = res.headers.get('content-type') || '';
+  if (!contentType.includes('application/json')) {
+    // Server sent back something that isn't JSON (an HTML error page, a
+    // proxy timeout page, etc). Surface a friendly message instead of
+    // letting `.json()` throw a raw "Unexpected token '<'" error.
+    if (res.status === 401 || res.status === 403) {
+      return { ok: false, error: 'Your session expired. Please log in again.' };
+    }
+    if (res.status === 502 || res.status === 503 || res.status === 504) {
+      return { ok: false, error: 'The server took too long to respond. Please try again.' };
+    }
+    return { ok: false, error: `Request failed (${res.status}). Please try again.` };
+  }
+  try {
+    return await res.json();
+  } catch (e) {
+    return { ok: false, error: 'Received an invalid response from the server. Please try again.' };
+  }
+}
+
 async function postJson(url, body) {
   const csrf = document.querySelector('meta[name="csrf-token"]')?.content;
-  const res = await fetch(url, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'X-CSRFToken': csrf || '',
-    },
-    body: JSON.stringify(body || {}),
-  });
-  return res.json();
+  try {
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRFToken': csrf || '',
+      },
+      body: JSON.stringify(body || {}),
+    });
+    return await safeJson(res);
+  } catch (e) {
+    return { ok: false, error: 'Network error. Please check your connection and try again.' };
+  }
 }
 
 async function postForm(url, formData) {
   const csrf = document.querySelector('meta[name="csrf-token"]')?.content;
-  const res = await fetch(url, {
-    method: 'POST',
-    headers: { 'X-CSRFToken': csrf || '' },
-    body: formData,
-  });
-  return res.json();
+  try {
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: { 'X-CSRFToken': csrf || '' },
+      body: formData,
+    });
+    return await safeJson(res);
+  } catch (e) {
+    return { ok: false, error: 'Network error. Please check your connection and try again.' };
+  }
 }
 
 function escapeHtml(str) {

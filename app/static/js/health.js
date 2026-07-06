@@ -390,11 +390,11 @@ function selectPart(part) {
 
     try {
       const res = await fetch(urls.message, { method: 'POST', headers: { 'X-CSRFToken': csrf() }, body: fd });
-      const data = await res.json();
+      const data = await safeJson(res);
       removePending();
       $('reportUpload').value = '';
       if (!data.ok) {
-        addMessage(data.error || 'Something went wrong.', 'assistant');
+        addMessage(data.error || "I couldn't process that. Please try again.", 'assistant');
         return;
       }
       renderEmergency(data.emergency);
@@ -410,7 +410,7 @@ function selectPart(part) {
       }
     } catch (err) {
       removePending();
-      addMessage(err.message, 'assistant');
+      addMessage("I couldn't reach the server. Please check your connection and try again.", 'assistant');
     }
   }
 
@@ -443,11 +443,15 @@ function selectPart(part) {
     panel.hidden = false;
     const cards = [
       ['Overview', report.overview],
+      ["What's Happening", report.what_is_happening],
       ['Possible Causes', report.possible_causes],
+      ['Why This Urgency Level', report.severity_reasoning],
       ['Home Remedies', report.home_remedies],
       ['Lifestyle Advice', report.lifestyle_advice],
-      ['When to See Doctor', report.when_to_see_doctor],
+      ['When to See a Doctor', report.when_to_see_doctor],
       ['Emergency Warning Signs', report.emergency_warning_signs],
+      ['Follow-up Plan', report.follow_up_plan],
+      ['Questions to Ask Your Doctor', report.questions_to_ask_doctor],
       ['Report Cross-check', report.uploaded_report_cross_check],
       ['Urgency', report.urgency],
       ['Confidence', report.confidence],
@@ -466,18 +470,26 @@ function selectPart(part) {
   }
 
   async function openReport(id) {
-    const res = await fetch(apiUrl(urls.report, id));
-    const data = await res.json();
-    if (!data.ok) return;
-    renderReport(data.report, id);
+    try {
+      const res = await fetch(apiUrl(urls.report, id));
+      const data = await safeJson(res);
+      if (!data.ok) { showToast(data.error || 'Could not open report.', 'error'); return; }
+      renderReport(data.report, id);
+    } catch (e) {
+      showToast("Could not reach the server. Please try again.", 'error');
+    }
   }
 
   async function deleteReport(id) {
-    const res = await fetch(apiUrl(urls.del, id), { method: 'POST', headers: { 'X-CSRFToken': csrf() } });
-    const data = await res.json();
-    if (!data.ok) return;
-    document.querySelector(`[data-report-id="${id}"]`)?.remove();
-    showToast(t('deleted'), 'success');
+    try {
+      const res = await fetch(apiUrl(urls.del, id), { method: 'POST', headers: { 'X-CSRFToken': csrf() } });
+      const data = await safeJson(res);
+      if (!data.ok) { showToast(data.error || 'Could not delete report.', 'error'); return; }
+      document.querySelector(`[data-report-id="${id}"]`)?.remove();
+      showToast(t('deleted'), 'success');
+    } catch (e) {
+      showToast("Could not reach the server. Please try again.", 'error');
+    }
   }
 
   function bindEvents() {
